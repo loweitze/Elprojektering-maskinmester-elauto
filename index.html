@@ -263,7 +263,7 @@ function example(){
   const hal={method:"E",group:"bakke",gn:6,temp:37};
   const P={
     name:"Hansens maskinfabrik",
-    settings:{Un:400,U0:230,cmax:1.10,cmin:0.95,useKT:false,thetaMin:"drift",duLight:3,duOther:5,duFeed:1,inrush:2,startCmp:"nom"},
+    settings:{Un:400,U0:230,thetaMin:"drift",duLight:3,duOther:5,duFeed:1,inrush:2,startCmp:"nom"},
     net:{Sk:110,rx:0.35},
     trafo:{S:630,ek:5,Pk:4600,Ur:420},
     boards:[{id:"U1",name:"Hovedtavle -U1"},{id:"U2",name:"Undertavle -U2"},{id:"U3",name:"Undertavle -U3"},{id:"U4",name:"Undertavle -U4"},{id:"U5",name:"Undertavle -U5"}],
@@ -309,19 +309,19 @@ function example(){
 function source(P){
   const S=P.settings,Un=S.Un;
   const stiff=!!P.net.stiff;
-  const ZQ=stiff?0:S.cmax*Un*Un/(P.net.Sk*1e6)*1000;
+  const ZQ=stiff?0:Un*Un/(P.net.Sk*1e6)*1000;
   const XQ=ZQ/Math.sqrt(1+P.net.rx**2),RQ=P.net.rx*XQ;
   const Ur=P.trafo.Ur,Sr=P.trafo.S*1000;
   const ZT=P.trafo.ek/100*Ur*Ur/Sr*1000,RT=P.trafo.Pk*Ur*Ur/(Sr*Sr)*1000,XT=Math.sqrt(Math.max(0,ZT*ZT-RT*RT));
-  const xT=XT/(Ur*Ur/Sr*1000),KT=S.useKT?0.95*S.cmax/(1+0.6*xT):1;
+  const xT=XT/(Ur*Ur/Sr*1000),KT=1;
   const zQ={r:RQ,x:XQ},zT={r:RT*KT,x:XT*KT};
   return {ZQ,XQ,RQ,ZT,RT,XT,xT,KT,zQ,zT,Z1:cadd(zQ,zT),Zl:cadd(cmul(zQ,2/3),zT),InT:Sr/(SQ3*Un)};
 }
 function ikSet(P,Z1max,Z1min,Zlmax,Zlmin){
   const S=P.settings,Un=S.Un;
   return {Z1max,Z1min,Zlmax,Zlmin,
-    ik3max:S.cmax*Un*1000/(SQ3*cabs(Z1max)),ik3min:S.cmin*Un*1000/(SQ3*cabs(Z1min)),
-    ik2min:S.cmin*Un*1000/(2*cabs(Z1min)),ik1max:S.cmax*Un/SQ3*1000/cabs(Zlmax),ik1min:S.cmin*Un/SQ3*1000/cabs(Zlmin)};
+    ik3max:Un*1000/(SQ3*cabs(Z1max)),ik3min:Un*1000/(SQ3*cabs(Z1min)),
+    ik2min:Un*1000/(2*cabs(Z1min)),ik1max:S.U0*1000/cabs(Zlmax),ik1min:S.U0*1000/cabs(Zlmin)};
 }
 function thetaMin(P,c){return P.settings.thetaMin==="drift"?THETA_OP[c.cable.ins]:+P.settings.thetaMin}
 function cableZ(c,theta){
@@ -514,27 +514,25 @@ function docSteps(P,r){
   // 5 impedanser
   {const s=r.src,L=[];
    if(P.net.stiff)L.push({f:"Stift net: S″kQ → ∞",r:"ZQ = 0 mΩ"},{t:"Nettet foran transformeren regnes uden impedans. Kun transformer og kabler begrænser kortslutningsstrømmen."});
-   else{L.push({f:"ZQ = c · Un² / S\"kQ",s:`= ${fmt(S.cmax,2)} · ${S.Un}² / ${fmt(P.net.Sk,0)} MVA`,r:`ZQ = ${fmt(s.ZQ,3)} mΩ`});
+   else{L.push({f:"ZQ = Un² / S″kQ",s:`= ${S.Un}² / ${fmt(P.net.Sk,0)} MVA`,r:`ZQ = ${fmt(s.ZQ,3)} mΩ`});
    L.push({f:"XQ = ZQ / √(1 + (R/X)²),  RQ = (R/X) · XQ",s:`R/X = ${fmt(P.net.rx,2)}`,r:`ZQ = ${fZ(s.zQ)} mΩ`});}
    L.push({f:"ZT = uk · UrT² / SrT",s:`= ${fmt(P.trafo.ek/100,3)} · ${P.trafo.Ur}² / ${fmt(P.trafo.S,0)} kVA`,r:`ZT = ${fmt(s.ZT,3)} mΩ`});
    L.push({f:"RT = Pk · UrT² / SrT²,  XT = √(ZT² − RT²)",s:`= ${fmt(P.trafo.Pk,0)} W · ${P.trafo.Ur}² / (${fmt(P.trafo.S,0)} kVA)²`,r:`ZT = ${fmt(s.RT,3)} + j${fmt(s.XT,3)} mΩ`});
-   if(S.useKT)L.push({f:"KT = 0,95 · cmax / (1 + 0,6 · xT)",s:`= 0,95 · ${fmt(S.cmax,2)} / (1 + 0,6 · ${fmt(s.xT,4)})`,r:`KT = ${fmt(s.KT,4)}`});
    L.push({t:"Kabler: R = R20′ · (1 + α · (θ − 20 °C)) · L / n,  X = X′ · L / n. Maks.-værdier ved 20 °C, min.-værdier ved θ = "+fmt(thetaMin(P,c),0)+" °C."});
-   steps.push({h:"Impedanser",L,src:[cite("iec60909","afsnit 6.2 (net), 6.3 (transformer), tabel 1 (c-faktor)"),cite("iec60228","tabel 2, R20"),cite("opg","net- og transformerdata")],imp:true})}
+   steps.push({h:"Impedanser",L,src:[cite("iec60909","afsnit 6.2 (net), 6.3 (transformer)"),cite("iec60228","tabel 2, R20"),cite("opg","net- og transformerdata")],imp:true})}
   // 6 Ik
   {const e=r.end,st=r.start,L=[];
-   const one=(nm,z,cc,div,ik,lbl)=>({f:`${nm} = ${cc} · ${div} / |${lbl}|`,s:`= ${fmt(cc==="cmax"?S.cmax:S.cmin,2)} · ${div==="Un"?S.Un:div==="Un / √3"?fmt(S.Un/SQ3,1):S.Un} V${div==="Un / (√3)"?"":""} / ${fmt(cabs(z),2)} mΩ`,r:`${nm} = ${fA(ik)}`});
    L.push({t:"Ved kredsens begyndelse (værnets placering):"});
-   L.push({f:"Ik3,max = cmax · Un / (√3 · |Z1,max|)",s:`= ${fmt(S.cmax,2)} · ${S.Un} / (√3 · ${fmt(cabs(st.Z1max),2)} mΩ)`,r:`Ik3,max = ${fA(st.ik3max)}`});
-   L.push({f:"Ik1,max = cmax · Un / √3 / |ZS,max|",s:`= ${fmt(S.cmax,2)} · ${fmt(S.Un/SQ3,1)} / ${fmt(cabs(st.Zlmax),2)} mΩ`,r:`Ik1,max = ${fA(st.ik1max)}`});
+   L.push({f:"Ik3,max = Un / (√3 · |Z1,max|)",s:`= ${S.Un} V / (√3 · ${fmt(cabs(st.Z1max),2)} mΩ)`,r:`Ik3,max = ${fA(st.ik3max)}`});
+   L.push({f:"Ik1,max = U0 / |ZS,max|",s:`= ${S.U0} V / ${fmt(cabs(st.Zlmax),2)} mΩ`,r:`Ik1,max = ${fA(st.ik1max)}`});
    L.push({t:"Ved kredsens slutning (fjerneste punkt):"});
    L.push({f:"Z1,min = ZQ + ZT + Σ ZL(θ)",r:`Z1,min = ${fZ(e.Z1min)} mΩ`});
-   L.push({f:"Ik2,min = cmin · Un / (2 · |Z1,min|)",s:`= ${fmt(S.cmin,2)} · ${S.Un} / (2 · ${fmt(cabs(e.Z1min),2)} mΩ)`,r:`Ik2,min = ${fA(e.ik2min)}`});
+   L.push({f:"Ik2,min = Un / (2 · |Z1,min|)",s:`= ${S.Un} V / (2 · ${fmt(cabs(e.Z1min),2)} mΩ)`,r:`Ik2,min = ${fA(e.ik2min)}`});
    L.push({f:"ZS,min = ⅔ · ZQ + ZT + Σ (ZL + ZPE)(θ)",r:`ZS,min = ${fZ(e.Zlmin)} mΩ`});
-   L.push({f:"Ik1,min = cmin · Un / √3 / |ZS,min|",s:`= ${fmt(S.cmin,2)} · ${fmt(S.Un/SQ3,1)} / ${fmt(cabs(e.Zlmin),2)} mΩ`,r:`Ik1,min = ${fA(e.ik1min)}`});
-   L.push({f:"Ik3,max (slut) = cmax · Un / (√3 · |Z1,max|)",s:`= ${fmt(S.cmax,2)} · ${S.Un} / (√3 · ${fmt(cabs(e.Z1max),2)} mΩ)`,r:`Ik3,max = ${fA(e.ik3max)}`});
+   L.push({f:"Ik1,min = U0 / |ZS,min|",s:`= ${S.U0} V / ${fmt(cabs(e.Zlmin),2)} mΩ`,r:`Ik1,min = ${fA(e.ik1min)}`});
+   L.push({f:"Ik3,max (slut) = Un / (√3 · |Z1,max|)",s:`= ${S.Un} V / (√3 · ${fmt(cabs(e.Z1max),2)} mΩ)`,r:`Ik3,max = ${fA(e.ik3max)}`});
    L.push({t:"ZS er sløjfeimpedansen fase–PE. ⅔ · ZQ kommer fra de symmetriske komposanter: nettet over en Dyn-transformer indgår ikke i nulsystemet, og transformerens nulimpedans sættes lig ZT."});
-   steps.push({h:"Kortslutningsstrømme",L,src:[cite("iec60909","ligning (29) Ik3, (44) Ik2, (52) Ik1; cmax/cmin tabel 1")]})}
+   steps.push({h:"Kortslutningsstrømme",L,src:[cite("iec60909","metode for Ik3, Ik2 og Ik1")]})}
   // 7 kortslutningsbeskyttelse
   {const a=r.adi,L=[];const ikS=Math.max(r.start.ik3max,r.start.ik1max);
    L.push({f:"Icu ≥ Ik,max ved værnets placering",s:`${fmt(+c.prot.Icu,0)} kA ≥ ${fA(ikS)}`,r:c.prot.Icu*1000>=ikS?"Opfyldt":"Ikke opfyldt"});
@@ -566,7 +564,7 @@ function docSteps(P,r){
 }
 function fuseTime(In,I){const g=GG[In],n=Math.log(5/0.4)/Math.log(g[1]/g[0]);return Math.max(0.1,0.4*Math.pow(I/g[1],-n))}
 function maxLenFault(P,r){ // længde hvor Ik1,min = Ia
-  const c=r.c,S=P.settings,target=S.cmin*S.Un/SQ3*1000/r.pr.Ia;
+  const c=r.c,S=P.settings,target=S.U0*1000/r.pr.Ia;
   const up=r.start.Zlmin,th=thetaMin(P,c),f=1+ALPHA[c.cable.mat]*(th-20),par=Math.max(1,+c.cable.par||1);
   const rpm=(R20[c.cable.mat][sizeIdx(c.cable.size)]+R20[c.cable.mat][sizeIdx(r.za.pe)])*f/par,xpm=2*c.cable.x/par;
   let lo=0,hi=100000;for(let i=0;i<60;i++){const m=(lo+hi)/2;Math.hypot(up.r+rpm*m,up.x+xpm*m)>target?hi=m:lo=m}
@@ -585,7 +583,7 @@ const WHY={
  "Kablets strømværdi Iz":"Iz er den strøm, kablet kan føre hele tiden, uden at isoleringen bliver for varm. Tabelværdien gælder for standardforhold: 30 °C i luft (20 °C i jord) og kablet alene. Varmere omgivelser og flere kabler tæt sammen giver dårligere køling, så tabelværdien ganges med korrektionsfaktorer.",
  "Beskyttelse mod overbelastning":"Kablet er beskyttet mod overbelastning, når værnet er mindst lige så stort som belastningen, men ikke større end kablet kan tåle: Ib ≤ In ≤ Iz.",
  "Impedanser":"For at regne kortslutningsstrømme skal alle impedanser fra spændingskilden til fejlstedet kendes: nettet bag transformeren, transformeren og hvert kabel på vejen. Den største strøm fås med kolde ledere (20 °C), den mindste med varme ledere, fordi modstanden stiger med temperaturen.",
- "Kortslutningsstrømme":"Den største strøm (Ik,max) ved værnet bruges til at kontrollere, at værnet kan bryde strømmen. Den mindste strøm (Ik,min) i enden af kablet bruges til at kontrollere, at værnet udløser hurtigt nok ved en fejl langt ude. c-faktoren tager højde for, at netspændingen kan variere.",
+ "Kortslutningsstrømme":"Den største strøm (Ik,max) ved værnet bruges til at kontrollere, at værnet kan bryde strømmen. Den mindste strøm (Ik,min) i enden af kablet bruges til at kontrollere, at værnet udløser hurtigt nok ved en fejl langt ude. Største og mindste strøm adskiller sig ved ledertemperaturen: kolde ledere giver den største strøm, varme ledere den mindste.",
  "Beskyttelse mod kortslutning":"Værnet skal kunne afbryde den største kortslutningsstrøm uden at gå i stykker (brydeevne Icu). Desuden må lederne ikke blive så varme under kortslutningen, at isoleringen tager skade. Den energi, der slipper igennem (I²t), skal være mindre end den energi, lederen kan tåle (k²S²).",
  "Fejlbeskyttelse (automatisk afbrydelse)":"Ved en isolationsfejl mellem en fase og en udsat del, fx et motorhus, kan der opstå farlig berøringsspænding. Værnet skal derfor afbryde inden for den tid, standarden kræver. Det sker kun, hvis fejlstrømmen Ik1,min er mindst lige så stor som den strøm Ia, der får værnet til at udløse inden for tiden.",
  "Spændingsfald":"Strømmen giver et spændingsfald i kablet. Bliver det for stort, får udstyret for lav spænding: motorer starter dårligt, og lys flimrer. Spændingsfaldet lægges sammen fra transformeren og ud til forbrugeren og sammenlignes med grænsen.",
@@ -682,7 +680,6 @@ function vVejl(m){
    <dt>Ik3</dt><dd>Kortslutningsstrøm når alle tre faser kortsluttes.</dd>
    <dt>Ik2</dt><dd>Kortslutningsstrøm mellem to faser.</dd>
    <dt>Ik1</dt><dd>Fejlstrøm mellem fase og PE. Bruges til fejlbeskyttelse.</dd>
-   <dt>c</dt><dd>Spændingsfaktor der dækker variation i netspændingen (cmax 1,10 og cmin 0,95).</dd>
    <dt>ZQ, ZT</dt><dd>Impedans af nettet og af transformeren.</dd>
    <dt>kt, kg, ks</dt><dd>Korrektionsfaktorer for temperatur, samlet fremføring og jordens termiske modstand.</dd>
    <dt>k</dt><dd>Materialekonstant for hvor meget kortslutningsvarme lederen tåler (115 for PVC/Cu).</dd>
@@ -715,16 +712,14 @@ function vProjekt(m){
     <div class="sec"><h3>Beregningsforudsætninger</h3><div class="fg">
       ${fld("Un",inp("p","settings.Un",S.Un,{unit:"V"}))}
       ${fld("U0",inp("p","settings.U0",S.U0,{unit:"V"}))}
-      ${fld("cmax",inp("p","settings.cmax",S.cmax))}
-      ${fld("cmin",inp("p","settings.cmin",S.cmin))}
       ${fld("Ledertemp. ved Ik,min",sel_("p","settings.thetaMin",S.thetaMin,[["drift","Driftstemp. (70/90 °C)"],["20","20 °C"],["80","80 °C"],["160","160 °C (PVC slut)"],["250","250 °C (PEX slut)"]]))}
       ${fld("ΔU belysning",inp("p","settings.duLight",S.duLight,{unit:"%"}))}
       ${fld("ΔU øvrige",inp("p","settings.duOther",S.duOther,{unit:"%"}))}
       ${fld("Mål for Δu pr. forsyningskreds (auto)",inp("p","settings.duFeed",S.duFeed??1,{unit:"%"}))}
       ${fld("Iinrush / Istart",inp("p","settings.inrush",S.inrush))}
       ${fld("Startkontrol mod",sel_("p","settings.startCmp",S.startCmp,[["nom","Indstillet Im"],["tol","Im − 20 %"]]),"w2")}
-    </div>${chk("p","settings.useKT",S.useKT,"Brug korrektionsfaktor KT for transformer (DS/EN 60909-0, 6.3.3)")}
-    <p class="help" style="margin-top:8px">cmax og cmin er spændingsfaktorer fra DS/EN 60909-0 tabel 1. Ledertemperaturen ved Ik,min gør modstanden større og strømmen mindre. Højere temperatur er på den sikre side. Målet for spændingsfald pr. forsyningskreds bruges kun af den automatiske dimensionering, så der er plads til spændingsfald i grupperne bagefter.</p></div>
+    </div>
+    <p class="help" style="margin-top:8px">Kortslutningsstrømmene regnes med Un og U0 direkte. Ledertemperaturen ved Ik,min gør modstanden større og strømmen mindre. Højere temperatur er på den sikre side. Målet for spændingsfald pr. forsyningskreds bruges kun af den automatiske dimensionering, så der er plads til spændingsfald i grupperne bagefter.</p></div>
     <div class="sec"><h3>Tavler</h3><div class="stack" id="boards">${P.boards.map((b,i)=>`<div class="fg"><div class="field"><span class="flabel">Kode</span><input data-scope="p" data-k="boards.${i}.id" type="text" value="${esc(b.id)}" disabled></div>${fld("Navn",inp("p",`boards.${i}.name`,b.name,{type:"text"}))}</div>`).join("")}</div>
       <div class="btns" style="margin-top:10px"><button class="btn" id="addBoard">Tilføj tavle</button></div></div>
    </div>
@@ -735,20 +730,19 @@ function vProjekt(m){
 function renderSource(){
   const el=$("#srcres");if(!el)return;const E=makeEngine(P),s=E.src,b=E.busOf("T"),S=P.settings;
   const L=[...(P.net.stiff?[{f:"Stift net: S″kQ → ∞",r:"ZQ = 0 mΩ"},{t:"Nettet foran transformeren regnes uden impedans. Kun transformer og kabler begrænser kortslutningsstrømmen."}]:[
-   {f:"ZQ = cmax · Un² / S″kQ",s:`= ${fmt(S.cmax,2)} · ${S.Un}² V² / ${fmt(P.net.Sk,0)} MVA`,r:`ZQ = ${fmt(s.ZQ,3)} mΩ`},
+   {f:"ZQ = Un² / S″kQ",s:`= ${S.Un}² V² / ${fmt(P.net.Sk,0)} MVA`,r:`ZQ = ${fmt(s.ZQ,3)} mΩ`},
    {f:"XQ = ZQ / √(1 + (R/X)²)",s:`= ${fmt(s.ZQ,3)} / √(1 + ${fmt(P.net.rx,2)}²)`,r:`XQ = ${fmt(s.XQ,3)} mΩ`},
    {f:"RQ = (R/X) · XQ",s:`= ${fmt(P.net.rx,2)} · ${fmt(s.XQ,3)}`,r:`RQ = ${fmt(s.RQ,3)} mΩ`}]),
    {f:"ZT = uk · UrT² / SrT",s:`= ${fmt(P.trafo.ek/100,3)} · ${P.trafo.Ur}² / ${fmt(P.trafo.S*1000,0)}`,r:`ZT = ${fmt(s.ZT,3)} mΩ`},
    {f:"RT = Pk · UrT² / SrT²",s:`= ${fmt(P.trafo.Pk,0)} · ${P.trafo.Ur}² / ${fmt(P.trafo.S*1000,0)}²`,r:`RT = ${fmt(s.RT,3)} mΩ`},
    {f:"XT = √(ZT² − RT²)",s:`= √(${fmt(s.ZT,3)}² − ${fmt(s.RT,3)}²)`,r:`XT = ${fmt(s.XT,3)} mΩ`}];
-  if(S.useKT)L.push({f:"KT = 0,95 · cmax / (1 + 0,6 · xT)",s:`xT = ${fmt(s.xT,4)}`,r:`KT = ${fmt(s.KT,4)}`});
   L.push({f:"Z1 = ZQ + ZT",r:`Z1 = ${fZ(s.Z1)} mΩ,  |Z1| = ${fmt(cabs(s.Z1),3)} mΩ`});
-  L.push({f:"Ik3,max = cmax · Un / (√3 · |Z1|)",s:`= ${fmt(S.cmax,2)} · ${S.Un} / (√3 · ${fmt(cabs(s.Z1),3)} mΩ)`,r:`Ik3,max = ${fA(b.ik3max)}`});
-  L.push({f:"Ik1,max = cmax · Un/√3 / |⅔ · ZQ + ZT|",r:`Ik1,max = ${fA(b.ik1max)}`});
+  L.push({f:"Ik3,max = Un / (√3 · |Z1|)",s:`= ${S.Un} V / (√3 · ${fmt(cabs(s.Z1),3)} mΩ)`,r:`Ik3,max = ${fA(b.ik3max)}`});
+  L.push({f:"Ik1,max = U0 / |⅔ · ZQ + ZT|",s:`= ${S.U0} V / ${fmt(cabs(s.Zl),3)} mΩ`,r:`Ik1,max = ${fA(b.ik1max)}`});
   L.push({f:"InT = SrT / (√3 · Un)",r:`InT = ${fmt(s.InT,0)} A`});
   el.innerHTML=`<h2>Transformerens klemmer</h2><p class="note">Kildeimpedans og kortslutningsstrømme ved lavspændingsklemmerne. Disse værdier er udgangspunkt for alle kredse.</p>
    ${chainHtml([["Net Q",s.zQ],["Trafo T",s.zT]],"Klemmer")}
-   ${stepHtml({h:"Net og transformer",L,src:[cite("iec60909","ligning (1) og (5), tabel 1; (7)–(9) transformer; (29) Ik3"),cite("opg","net- og transformerdata")]},0)}
+   ${stepHtml({h:"Net og transformer",L,src:[cite("iec60909","afsnit 6.2 (net) og 6.3 (transformer)"),cite("opg","net- og transformerdata")]},0)}
    <div class="kv">${[["Ik3,max",b.ik3max],["Ik3,min",b.ik3min],["Ik2,min",b.ik2min],["Ik1,max",b.ik1max],["Ik1,min",b.ik1min]].map(([k,v])=>`<div><span class="lbl">${k}</span><b>${fA(v)}</b></div>`).join("")}</div>`;
 }
 
@@ -866,7 +860,7 @@ function stepHtml(s,no,extra=""){const why=s.why||WHY[s.h];
    ${extra}<div class="src">Kilde: ${s.src.map(x=>`<span><b>${esc(SRC[x.k].split(" – ")[0])}</b>${x.extra?", "+esc(x.extra):""}</span>`).join(" · ")}</div></div>`;
 }
 function chainHtml(items,end){
-  return `<div class="chain"><div class="srcv">c·U</div>${items.map(([n,z])=>`<div class="w"></div><div class="z"><b>${esc(n.length>22?n.slice(0,21)+"…":n)}</b>${fmt(z.r,2)} + j${fmt(z.x,2)}</div>`).join("")}<div class="w"></div><span class="flt">✕ ${esc(end)}</span></div>`;
+  return `<div class="chain"><div class="srcv">U</div>${items.map(([n,z])=>`<div class="w"></div><div class="z"><b>${esc(n.length>22?n.slice(0,21)+"…":n)}</b>${fmt(z.r,2)} + j${fmt(z.x,2)}</div>`).join("")}<div class="w"></div><span class="flt">✕ ${esc(end)}</span></div>`;
 }
 function copy(t){const done=()=>toast("Kopieret");try{navigator.clipboard.writeText(t).then(done,()=>fallback(t))}catch(e){fallback(t)}}
 function fallback(t){const ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand("copy");toast("Kopieret")}catch(e){toast("Markér teksten og kopiér manuelt")}ta.remove()}
@@ -922,7 +916,7 @@ function vEnstreg(m){
    <div class="sld" style="margin-top:10px"><svg width="${totalW}" height="${Ht}" viewBox="0 0 ${totalW} ${Ht}" style="color:var(--fg)">${svg}</svg></div></div>
    <div class="panel"><h2>Kortslutningsstrømme</h2><div class="tblwrap"><table><thead><tr><th>Sted</th><th>Ik3,max</th><th>Ik3,min</th><th>Ik2,min</th><th>Ik1,max</th><th>Ik1,min</th><th>|Z1,max| mΩ</th><th>|ZS,min| mΩ</th></tr></thead><tbody>
    ${rows.map(([n,k])=>`<tr><td class="l">${esc(n)}</td><td>${fA(k.ik3max)}</td><td>${fA(k.ik3min)}</td><td>${fA(k.ik2min)}</td><td>${fA(k.ik1max)}</td><td>${fA(k.ik1min)}</td><td>${fmt(cabs(k.Z1max),2)}</td><td>${fmt(cabs(k.Zlmin),2)}</td></tr>`).join("")}</tbody></table></div>
-   <p class="src">Kilde: <b>DS/EN 60909-0</b>. cmax = ${fmt(P.settings.cmax,2)}, cmin = ${fmt(P.settings.cmin,2)}. Maks. ved 20 °C, min. ved ${P.settings.thetaMin==="drift"?"driftstemperatur":P.settings.thetaMin+" °C"}.</p></div></div>`;
+   <p class="src">Kilde: <b>DS/EN 60909-0</b>. Maks. ved 20 °C, min. ved ${P.settings.thetaMin==="drift"?"driftstemperatur":P.settings.thetaMin+" °C"}.</p></div></div>`;
 }
 
 /* ---------- Selektivitet ---------- */
