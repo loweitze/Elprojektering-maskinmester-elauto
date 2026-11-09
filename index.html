@@ -1,0 +1,1005 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font-size:14px}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Elprojektering</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: tavle-panel. Faner øverst; i "Kredse" en liste til venstre og redigering + beregning til højre. */
+:root{
+  --bg:#eef0ec; --panel:#ffffff; --fg:#1a1e1c; --muted:#5d6661; --line:#d5dad5; --line2:#e6e9e5;
+  --accent:#1d4f9c; --accent-fg:#ffffff; --soft:#e3e9f3;
+  --ok:#1f7a46; --ok-bg:#e2f2e8; --bad:#b3261e; --bad-bg:#f8e3e1; --warn:#8a5a00; --warn-bg:#f8eed6;
+  --c-brun:#7a4a22; --c-sort:#1a1a1a; --c-graa:#8b8f8c; --c-blaa:#2a62c9; --c-gron:#3c9a3c; --c-gul:#e5c11f;
+  --f-display:"Barlow Condensed","Arial Narrow",sans-serif;
+  --f-body:"Barlow",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141816; --panel:#1d2220; --fg:#e7ebe8; --muted:#9aa49f; --line:#323a36; --line2:#2a312e;
+  --accent:#7aa6ec; --accent-fg:#0d1420; --soft:#1f2a3a;
+  --ok:#6cc792; --ok-bg:#183326; --bad:#f0857c; --bad-bg:#3a1d1b; --warn:#e2b45a; --warn-bg:#352a14;
+  --c-sort:#4a4a4a; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#141816; --panel:#1d2220; --fg:#e7ebe8; --muted:#9aa49f; --line:#323a36; --line2:#2a312e;
+  --accent:#7aa6ec; --accent-fg:#0d1420; --soft:#1f2a3a;
+  --ok:#6cc792; --ok-bg:#183326; --bad:#f0857c; --bad-bg:#3a1d1b; --warn:#e2b45a; --warn-bg:#352a14;
+  --c-sort:#4a4a4a; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.5}
+.wrap{max-width:1320px;margin:0 auto;padding-block:20px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;margin-bottom:16px}
+.leders{display:flex;gap:4px;margin-bottom:10px}
+.leders i{display:block;width:28px;height:6px;border-radius:3px}
+.pe{background:repeating-linear-gradient(90deg,var(--c-gron) 0 7px,var(--c-gul) 7px 14px)}
+h1{font-family:var(--f-display);font-weight:700;font-size:2.3rem;line-height:1;margin:0;text-wrap:balance}
+.sub{color:var(--muted);margin:6px 0 0;max-width:68ch}
+nav.tabs{display:flex;flex-wrap:wrap;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:4px}
+nav.tabs a{font:600 .92rem var(--f-body);color:var(--muted);padding:7px 12px;border-radius:5px;text-decoration:none}
+nav.tabs a[aria-current="page"]{background:var(--accent);color:var(--accent-fg)}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:18px;min-width:0}
+.stack{display:grid;gap:16px;min-width:0}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:16px;align-items:start}
+.lbl{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+h2{font:600 1.2rem var(--f-display);text-transform:uppercase;letter-spacing:.06em;margin:0 0 10px}
+h3{font:600 1rem var(--f-display);text-transform:uppercase;letter-spacing:.06em;margin:0 0 8px;color:var(--accent)}
+.note{font-size:.82rem;color:var(--muted);max-width:80ch;margin:0}
+.fg{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px 12px}
+.fg .w2{grid-column:span 2}
+@media (max-width:420px){.fg .w2{grid-column:span 1}}
+.field{display:grid;gap:3px;align-content:start;min-width:0}
+label,.flabel{font-size:.8rem;font-weight:500;color:var(--muted)}
+input,select,textarea{font:500 .95rem var(--f-mono);width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg);min-width:0}
+select{font-family:var(--f-body)}
+input[type="checkbox"]{width:auto}
+.chk{display:flex;gap:8px;align-items:center;font-size:.88rem;color:var(--fg);padding-top:6px}
+.unit{position:relative}
+.unit input{padding-right:46px}
+.unit span{position:absolute;right:9px;top:50%;transform:translateY(-50%);font:.78rem var(--f-mono);color:var(--muted);pointer-events:none}
+.btn{font:600 .85rem var(--f-body);padding:7px 12px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--fg);cursor:pointer}
+.btn.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.btn.danger{color:var(--bad)}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.sec{border-top:1px solid var(--line);padding-top:14px;margin-top:14px}
+
+/* kredse */
+.kgrid{display:grid;grid-template-columns:minmax(0,290px) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.kgrid{grid-template-columns:minmax(0,1fr)}}
+.klist{display:grid;gap:12px;max-height:calc(100vh - 160px);overflow:auto;position:sticky;top:12px}
+@media (max-width:900px){.klist{max-height:none;position:static}}
+.kgroup .lbl{display:block;padding:0 4px 4px}
+.kitem{display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center;width:100%;text-align:left;font:500 .88rem var(--f-body);padding:6px 8px;border:0;border-radius:5px;background:none;color:var(--fg);cursor:pointer}
+.kitem:hover{background:var(--bg)}
+.kitem[aria-current="true"]{background:var(--soft);color:var(--accent)}
+.kitem.load{color:var(--muted);font-weight:400}
+.pill{display:inline-flex;align-items:center;gap:4px;font:600 .7rem var(--f-body);padding:2px 8px;border-radius:999px;white-space:nowrap}
+.pill.ok{background:var(--ok-bg);color:var(--ok)} .pill.bad{background:var(--bad-bg);color:var(--bad)}
+.pill.warn{background:var(--warn-bg);color:var(--warn)} .pill.mut{background:var(--bg);color:var(--muted)}
+.hero{display:flex;flex-wrap:wrap;gap:10px 28px;align-items:flex-end;justify-content:space-between}
+.big{font:700 2.4rem/1.05 var(--f-display)}
+.big small{font-size:1.1rem;color:var(--muted);font-weight:600}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.kv div{background:var(--panel);padding:8px 11px;display:grid;gap:1px}
+.kv b{font:600 1.02rem var(--f-mono);font-variant-numeric:tabular-nums}
+.checks{display:grid;gap:5px;margin:0;padding:0;list-style:none}
+.checks li{display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:baseline;padding:7px 10px;border-radius:6px;background:var(--bg)}
+.checks .v{font:.8rem var(--f-mono);color:var(--muted);font-variant-numeric:tabular-nums;text-align:right}
+@media (max-width:560px){.checks li{grid-template-columns:44px 1fr}.checks .v{grid-column:2;text-align:left}}
+
+/* beregning */
+.step{border-top:1px solid var(--line);padding:14px 0 4px}
+.step h4{font:600 1.02rem var(--f-display);text-transform:uppercase;letter-spacing:.05em;margin:0 0 8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.step h4 .no{color:var(--muted);font-family:var(--f-mono);font-size:.85rem}
+.eq{display:grid;grid-template-columns:minmax(0,1fr);gap:2px;font:.86rem/1.55 var(--f-mono);background:var(--bg);border-radius:6px;padding:9px 12px;margin:6px 0;overflow-x:auto}
+.eq .f{color:var(--fg)} .eq .s{color:var(--muted)} .eq .r{color:var(--accent);font-weight:600}
+.eq .t{font-family:var(--f-body);font-size:.82rem;color:var(--muted)}
+.src{font-size:.78rem;color:var(--muted);margin:4px 0 0;display:flex;gap:6px;flex-wrap:wrap}
+.src b{font-weight:600;color:var(--fg)}
+.chain{display:flex;flex-wrap:wrap;align-items:center;gap:4px 0;font:.78rem var(--f-mono);margin:8px 0}
+.chain .z{border:1.5px solid var(--fg);border-radius:3px;padding:4px 8px;background:var(--panel);display:grid;text-align:center;min-width:92px}
+.chain .z b{font-family:var(--f-body);font-size:.75rem}
+.chain .w{width:18px;height:1.5px;background:var(--fg)}
+.chain .srcv{border-radius:50%;width:44px;height:44px;border:1.5px solid var(--fg);display:grid;place-items:center;font-size:.7rem}
+.chain .flt{color:var(--bad);font-weight:600;padding-left:4px}
+
+.tblwrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:.84rem}
+th,td{padding:6px 9px;text-align:right;border-bottom:1px solid var(--line2);white-space:nowrap}
+th{font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);vertical-align:bottom}
+th:first-child,td:first-child,.l{text-align:left}
+td{font-family:var(--f-mono)}
+td.l{font-family:var(--f-body)}
+tr.tot td{font-weight:600;border-top:2px solid var(--line)}
+.y{color:var(--ok)} .n{color:var(--bad)}
+.sld{overflow-x:auto;background:var(--panel)}
+.sld svg text{font-family:var(--f-body);fill:var(--fg)}
+.sld .mono{font-family:var(--f-mono)}
+textarea{min-height:200px;font-size:.78rem}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:6px;font-weight:600;font-size:.9rem}
+.warnbox{background:var(--warn-bg);color:var(--warn);border-radius:6px;padding:9px 12px;font-size:.85rem}
+.warnbox b{color:inherit}
+main a,.note a{color:var(--accent)}
+.theme{display:flex;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:4px}
+.theme button{font:600 .85rem var(--f-body);border:0;background:none;color:var(--muted);padding:6px 10px;border-radius:5px;cursor:pointer}
+.theme button[aria-pressed="true"]{background:var(--soft);color:var(--accent)}
+.why{margin:0 0 6px;max-width:80ch;font-size:.9rem;color:var(--fg)}
+.help{margin:2px 0 10px;max-width:80ch;font-size:.84rem;color:var(--muted)}
+.guide{max-width:820px}
+.guide p,.guide li{max-width:72ch}
+.guide ol{padding-left:1.3em;display:grid;gap:10px;margin:8px 0 0}
+.guide li b{color:var(--fg)}
+.gloss{display:grid;grid-template-columns:minmax(70px,auto) 1fr;gap:6px 16px;margin:8px 0 0}
+.gloss dt{font:600 .88rem var(--f-mono);color:var(--accent)}
+.gloss dd{margin:0;font-size:.9rem}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="leders" aria-hidden="true"><i style="background:var(--c-brun)"></i><i style="background:var(--c-sort)"></i><i style="background:var(--c-graa)"></i><i style="background:var(--c-blaa)"></i><i class="pe"></i></div>
+      <h1 id="pname">Elprojektering</h1>
+      <p class="sub">Dimensionering af forsyningskredse og gruppeledninger. Hver beregning vises trin for trin med formel, indsatte tal og kilde.</p>
+    </div>
+    <nav class="tabs" id="tabs">
+      <a href="#vejledning">Vejledning</a>
+      <a href="#projekt">Net og projekt</a>
+      <a href="#kredse">Kredse</a>
+      <a href="#belastning">Belastning</a>
+      <a href="#enstreg">Enstreg og Ik</a>
+      <a href="#selektivitet">Selektivitet</a>
+      <a href="#kilder">Kilder</a>
+      <a href="#gem">Gem og hent</a>
+    </nav>
+    <div class="theme" role="group" aria-label="Tema"><button type="button" data-th="system">Auto</button><button type="button" data-th="light">Lys</button><button type="button" data-th="dark">Mørk</button></div>
+  </header>
+  <main id="main"></main>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* ======================== DATA OG KILDER ======================== */
+const SRC={
+  hd52:"DS/HD 60364-5-52:2011 – Valg og installation af elektrisk materiel, ledningssystemer",
+  hd41:"DS/HD 60364-4-41:2017 – Beskyttelse mod elektrisk chok",
+  hd43:"DS/HD 60364-4-43:2010 – Beskyttelse mod overstrøm",
+  hd54:"DS/HD 60364-5-54 – Jordingsarrangementer og beskyttelsesledere",
+  iec60909:"DS/EN 60909-0:2016 – Kortslutningsstrømme i trefasede vekselstrømssystemer",
+  iec60228:"DS/EN 60228 – Ledere i isolerede kabler",
+  en60898:"DS/EN 60898-1 – Automatsikringer (MCB)",
+  en60947_2:"DS/EN 60947-2 – Effektafbrydere / kredsbrydere (MCCB)",
+  en60947_4:"DS/EN 60947-4-1 – Kontaktorer, motorværn og termorelæer",
+  en60269:"DS/EN 60269-1 – Lavspændingssikringer",
+  bilag1:"Opgavens bilag 1 – ABB M2BAX IE4, 2-polet, 400 V 50 Hz (katalog feb. 2024)",
+  opg:"Opgaveoplæg Hansens maskinfabrik, efterår 2026",
+  mms:"Typiske indstillingsområder for motorværn (fx ABB MS132/MS165) – kontrollér i producentens katalog"
+};
+const SZ=[1.5,2.5,4,6,10,16,25,35,50,70,95,120,150,185,240,300];
+const R20={ // Ω/km ved 20 °C, DS/EN 60228 klasse 2
+  Cu:[12.1,7.41,4.61,3.08,1.83,1.15,0.727,0.524,0.387,0.268,0.193,0.153,0.124,0.0991,0.0754,0.0601],
+  Al:[null,null,null,null,null,1.91,1.20,0.868,0.641,0.443,0.320,0.253,0.206,0.164,0.125,0.100]};
+const ALPHA={Cu:0.00393,Al:0.00403};
+const THETA_OP={PVC:70,XLPE:90};
+const KADI={PVC:{Cu:115,Al:76},XLPE:{Cu:143,Al:94}}; // HD 60364-4-43 tabel 43A
+const p5=a=>[null,null,null,null,null,...a];
+const IZ={ // HD 60364-5-52 bilag B. [ins][mat][belastede ledere][metode] → værdier pr. SZ
+ PVC:{Cu:{
+  2:{A1:[14.5,19.5,26,34,46,61,80,99,119,151,182,210,240,273,321,367],A2:[14,18.5,25,32,43,57,75,92,110,139,167,192,219,248,291,334],B1:[17.5,24,32,41,57,76,101,125,151,192,232,269,300,341,400,458],B2:[16.5,23,30,38,52,69,90,111,133,168,201,232,258,294,344,394],C:[19.5,27,36,46,63,85,112,138,168,213,258,299,344,392,461,530],D1:[22,29,37,46,60,78,99,119,140,173,204,231,261,292,336,379],D2:[22,28,38,48,64,83,110,132,156,192,230,261,293,331,382,427],E:[22,30,40,51,70,94,119,148,180,232,282,328,379,434,514,593]},
+  3:{A1:[13.5,18,24,31,42,56,73,89,108,136,164,188,216,245,286,328],A2:[13,17.5,23,29,39,52,68,83,99,125,150,172,196,223,261,298],B1:[15.5,21,28,36,50,68,89,110,134,171,207,239,262,296,346,394],B2:[15,20,27,34,46,62,80,99,118,149,179,206,225,255,297,339],C:[17.5,24,32,41,57,76,96,119,144,184,223,259,299,341,403,464],D1:[18,24,30,38,50,64,82,98,116,143,169,192,217,243,280,316],D2:[19,24,33,41,54,70,92,110,130,162,193,220,246,278,320,359],E:[18.5,25,34,43,60,80,101,126,153,196,238,276,319,364,430,497]}},
+ Al:{
+  2:{A1:p5([48,63,77,93,118,142,164,189,215,252,289]),A2:p5([44,58,71,86,108,130,150,172,195,229,263]),B1:p5([60,79,97,118,150,181,210,234,266,312,358]),B2:p5([54,71,86,104,131,157,181,201,230,269,308]),C:p5([66,83,103,125,160,195,226,261,298,352,406]),D1:p5([61,77,93,109,135,159,180,204,228,262,296]),D2:p5([63,82,98,117,145,173,200,224,255,298,336]),E:p5([73,89,111,135,173,210,244,282,322,380,439])},
+  3:{A1:p5([43,57,70,84,107,129,149,170,194,227,261]),A2:p5([41,53,65,78,98,118,135,155,176,207,237]),B1:p5([53,70,86,104,133,161,186,204,230,269,306]),B2:p5([48,62,77,92,116,139,160,176,199,232,265]),C:p5([59,73,90,110,140,170,197,227,259,305,351]),D1:p5([50,64,77,91,112,132,150,169,190,218,247]),D2:p5([53,69,83,99,122,148,169,189,214,250,282]),E:p5([62,78,96,117,150,183,212,245,280,330,381])}}},
+ XLPE:{Cu:{
+  2:{A1:[19,26,35,45,61,81,106,131,158,200,241,278,318,362,424,486],A2:[18.5,25,33,42,57,76,99,121,145,183,220,253,290,329,386,442],B1:[23,31,42,54,75,100,133,164,198,253,306,354,393,449,528,603],B2:[22,30,40,51,69,91,119,146,175,221,265,305,334,384,459,532],C:[24,33,45,58,80,107,138,171,209,269,328,382,441,506,599,693],D1:[25,33,43,53,71,91,116,139,164,203,239,271,306,343,395,446],D2:[27,35,46,58,77,100,129,155,183,225,270,306,343,387,448,502],E:[26,36,49,63,86,115,149,185,225,289,352,410,473,542,641,741]},
+  3:{A1:[17,23,31,40,54,73,95,117,141,179,216,249,285,324,380,435],A2:[16.5,22,30,38,51,68,89,109,130,164,197,227,259,295,346,396],B1:[20,28,37,48,66,88,117,144,175,222,269,312,342,384,450,514],B2:[19.5,26,35,44,60,80,105,128,154,194,233,268,300,340,398,455],C:[22,30,40,52,71,96,119,147,179,229,278,322,371,424,500,576],D1:[21,28,36,44,58,75,96,115,135,167,197,223,251,281,324,365],D2:[23,30,39,49,65,84,107,129,153,188,226,257,287,324,375,419],E:[23,32,42,54,75,100,127,158,192,246,298,346,399,456,538,621]}},
+ Al:{
+  2:{A1:p5([64,84,103,125,158,191,220,253,288,338,387]),A2:p5([60,78,96,115,145,175,201,230,262,307,352]),B1:p5([79,105,130,157,200,242,281,307,351,412,471]),B2:p5([72,94,115,138,175,210,242,261,300,358,415]),C:p5([84,101,126,154,198,241,280,324,371,439,508]),D1:p5([71,90,108,128,158,186,211,238,267,307,346]),D2:p5([76,98,117,139,170,204,233,261,296,343,386]),E:p5([91,108,135,164,211,257,300,346,397,470,543])},
+  3:{A1:p5([58,73,89,108,136,164,188,216,245,286,328]),A2:p5([55,70,86,104,131,158,182,209,238,279,319]),B1:p5([70,89,109,131,165,199,229,260,295,343,392]),B2:p5([64,78,96,117,150,183,212,243,280,330,381]),C:p5([76,94,116,142,181,220,255,294,335,395,453]),D1:p5([59,73,87,104,129,155,176,198,223,260,295]),D2:p5([66,82,98,117,145,175,200,224,256,296,336]),E:p5([77,97,120,146,187,227,263,304,347,409,471])}}}
+};
+const IZREF={PVC:{2:"B.52.2",3:"B.52.4",E:"B.52.10"},XLPE:{2:"B.52.3",3:"B.52.5",E:"B.52.12"}};
+const METHODS={A1:"A1 – ledere i rør i termisk isoleret væg",A2:"A2 – kabel i rør i termisk isoleret væg",B1:"B1 – ledere i rør på væg",B2:"B2 – kabel i rør eller lukket kanal på væg/gulv",C:"C – kabel direkte på væg eller loft",D1:"D1 – kabel i rør i jord",D2:"D2 – kabel direkte i jord",E:"E – kabel i fri luft (kabelstige, perforeret bakke)"};
+const KTA={PVC:[[10,1.22],[15,1.17],[20,1.12],[25,1.06],[30,1],[35,.94],[40,.87],[45,.79],[50,.71],[55,.61],[60,.5]],XLPE:[[10,1.15],[15,1.12],[20,1.08],[25,1.04],[30,1],[35,.96],[40,.91],[45,.87],[50,.82],[55,.76],[60,.71]]};
+const KTG={PVC:[[10,1.1],[15,1.05],[20,1],[25,.95],[30,.89],[35,.84],[40,.77]],XLPE:[[10,1.07],[15,1.04],[20,1],[25,.96],[30,.93],[35,.89],[40,.85]]};
+const SOIL={D1:[[.5,1.28],[.7,1.2],[1,1.18],[1.5,1.1],[2,1.05],[2.5,1],[3,.96]],D2:[[.5,1.88],[.7,1.62],[1,1.5],[1.5,1.28],[2,1.12],[2.5,1],[3,.9]]};
+const GROUPS={
+ bundt:{t:"Samlet i bundt (i luft, på overflade, i rør eller kanal)",ref:"B.52.17, pkt. 1",v:{1:1,2:.8,3:.7,4:.65,5:.6,6:.57,7:.54,8:.52,9:.5,12:.45,16:.41,20:.38}},
+ vaeg:{t:"Enkelt lag på væg, gulv eller uperforeret bakke",ref:"B.52.17, pkt. 2",v:{1:1,2:.85,3:.79,4:.75,5:.73,6:.72,7:.72,8:.71,9:.7}},
+ loft:{t:"Enkelt lag direkte under træloft",ref:"B.52.17, pkt. 3",v:{1:.95,2:.81,3:.72,4:.68,5:.66,6:.64,7:.63,8:.62,9:.61}},
+ bakke:{t:"Enkelt lag på perforeret kabelbakke",ref:"B.52.17, pkt. 4",v:{1:1,2:.88,3:.82,4:.77,5:.75,6:.73,7:.73,8:.72,9:.72}},
+ stige:{t:"Enkelt lag på kabelstige eller knægte",ref:"B.52.17, pkt. 5",v:{1:1,2:.87,3:.82,4:.8,5:.8,6:.79,7:.79,8:.78,9:.78}},
+ jord:{t:"Kabler direkte i jord, kabel mod kabel",ref:"B.52.18",v:{1:1,2:.75,3:.65,4:.6,5:.55,6:.5,7:.45,8:.43,9:.41,12:.36,16:.32,20:.29}},
+ jordror:{t:"Kabler i hver sit rør i jord, rør mod rør",ref:"B.52.19",v:{1:1,2:.85,3:.75,4:.7,5:.65,6:.6,7:.57,8:.54,9:.52,12:.47,16:.43,20:.4}}
+};
+// gG: [Ia ved 5 s, Ia ved 0,4 s] i A. Vejledende – aflæs på producentens tid/strøm-kurve.
+const GG={2:[9.2,16],4:[19,32],6:[28,46],10:[46,82],13:[56,100],16:[65,110],20:[85,145],25:[110,180],32:[150,270],35:[165,300],40:[190,330],50:[250,460],63:[320,550],80:[425,800],100:[580,1100],125:[715,1450],160:[950,1900],200:[1250,2600],250:[1650,3300],315:[2200,4300],355:[2500,4900],400:[2840,5600],500:[3800,7500],630:[5100,10000]};
+const MCB_IN=[6,10,13,16,20,25,32,40,50,63,80,100,125];
+const MCCB_IN=[16,25,32,40,50,63,80,100,125,160,200,250,320,400,500,630];
+const MMS_R=[[0.63,1],[1,1.6],[1.6,2.5],[2.5,4],[4,6.3],[6.3,10],[8,12],[10,16],[16,20],[20,25],[25,32],[32,42],[40,54],[52,65],[63,80],[80,100]];
+const MCB_MAG={B:[3,5],C:[5,10],D:[10,20]};
+const MOTORS=[ // bilag 1: kW, In, Is/In, cos, η%
+ [0.75,1.56,7.8,.83,83.5],[1.1,2.2,8.0,.84,85.2],[1.5,2.9,8.6,.87,86.5],[2.2,4.1,9.6,.88,88.0],[3,5.5,8.2,.89,89.1],[4,7.3,8.3,.88,90.0],[5.5,10.1,8.3,.86,90.9],[7.5,13.3,8.2,.89,91.7],[11,19.5,8.3,.88,92.6],[15,26.2,10.2,.89,93.3],[18.5,31.8,9.6,.90,93.7],[22,38.3,8.9,.88,94.0],[30,52.1,8.8,.88,94.5],[37,64.8,9.2,.87,94.8],[45,78.0,9.5,.88,95.0],[55,93.0,8.4,.90,95.3],[75,130,7.3,.87,95.6],[90,154,8.0,.88,95.8],[110,190,6.7,.87,96.0],[132,228,7.9,.87,96.2],[160,269,7.3,.89,96.3],[200,336,6.8,.89,96.5],[250,420,7.6,.89,96.5],[315,535,7.8,.87,96.5],[355,597,7.5,.89,96.5]].map(a=>({kw:a[0],In:a[1],IsIn:a[2],cos:a[3],eta:a[4]}));
+const PROT_T={"MCB-B":"Automatsikring (MCB), B","MCB-C":"Automatsikring (MCB), C","MCB-D":"Automatsikring (MCB), D","gG":"Smeltesikring gG","gG+TR":"Smeltesikring gG + termorelæ (kontaktor)","MMS":"Motorværn (MMS)","MCCB":"Kredsbryder (MCCB)"};
+const KINDS={board:"Forsyning til tavle",motor:"Motor",socket:"Stikkontakt",light:"Belysning",fixed:"Fast tilsluttet (fx vandvarmer)",other:"Anden last"};
+
+/* ======================== HJÆLPERE ======================== */
+const $=s=>document.querySelector(s);
+const SQ3=Math.sqrt(3);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt=(x,d=1)=>Number.isFinite(x)?x.toLocaleString("da-DK",{minimumFractionDigits:d,maximumFractionDigits:d}):"–";
+const fA=x=>!Number.isFinite(x)?"–":x>=1000?fmt(x/1000,2)+" kA":fmt(x,x<100?1:0)+" A";
+const fS=x=>Number.isFinite(x)?(x%1?fmt(x,1):fmt(x,0)):"–";
+const cabs=z=>Math.hypot(z.r,z.x);
+const cadd=(...zs)=>zs.reduce((a,z)=>({r:a.r+z.r,x:a.x+z.x}),{r:0,x:0});
+const cmul=(z,k)=>({r:z.r*k,x:z.x*k});
+const fZ=z=>`${fmt(z.r,2)} + j${fmt(z.x,2)}`;
+function interp(t,x){x=+x;if(x<=t[0][0])return t[0][1];for(let i=1;i<t.length;i++){if(x<=t[i][0]){const[a,b]=t[i-1],[c,d]=t[i];return b+(d-b)*(x-a)/(c-a)}}return t[t.length-1][1]}
+function groupF(key,n){const v=GROUPS[key].v,ks=Object.keys(v).map(Number).sort((a,b)=>a-b);for(const k of ks)if(n<=k)return{f:v[k],nUsed:k};const l=ks[ks.length-1];return{f:v[l],nUsed:l}}
+const sizeIdx=s=>SZ.indexOf(+s);
+const deep=o=>JSON.parse(JSON.stringify(o));
+const getP=(o,p)=>p.split(".").reduce((a,k)=>a?.[k],o);
+const setP=(o,p,v)=>{const ks=p.split(".");let a=o;for(let i=0;i<ks.length-1;i++)a=a[ks[i]]??={};a[ks.at(-1)]=v};
+const motorOf=kw=>MOTORS.find(m=>m.kw==kw)||MOTORS[0];
+function toast(t){const e=$("#toast");e.textContent=t;e.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>e.hidden=true,2200)}
+
+/* ======================== PROJEKT ======================== */
+let uid=0;const nid=()=>"k"+Date.now().toString(36)+(uid++);
+function C(o){
+  const d={id:nid(),name:"Ny kreds",from:"U1",kind:"fixed",toBoard:"",n:1,factor:1,dim:true,note:"",
+    load:{type:"P",val:1,cos:1,cap:false,phases:3,motorKw:4,startTime:0},
+    cable:{mat:"Cu",ins:"PVC",size:2.5,pe:"same",par:1,L:20,x:0.08,method:"E",temp:30,soil:1,group:"bakke",gn:1},
+    prot:{type:"MCB-C",In:16,Ir:16,Im:160,Icu:10,IaOv:0,t:"auto"}};
+  const r={...d,...o};r.load={...d.load,...(o.load||{})};r.cable={...d.cable,...(o.cable||{})};r.prot={...d.prot,...(o.prot||{})};return r;
+}
+function example(){
+  const M=(name,from,kw,pt,extra={})=>C({name,from,kind:"motor",dim:false,load:{type:"motor",motorKw:kw,phases:3},prot:{type:pt,Icu:50},...extra});
+  const hal={method:"E",group:"bakke",gn:6,temp:37};
+  const P={
+    name:"Hansens maskinfabrik",
+    settings:{Un:400,U0:230,cmax:1.10,cmin:0.95,useKT:false,thetaMin:"drift",duLight:3,duOther:5,duFeed:1,inrush:2,startCmp:"nom"},
+    net:{Sk:110,rx:0.35},
+    trafo:{S:630,ek:5,Pk:4600,Ur:420},
+    boards:[{id:"U1",name:"Hovedtavle -U1"},{id:"U2",name:"Undertavle -U2"},{id:"U3",name:"Undertavle -U3"},{id:"U4",name:"Undertavle -U4"},{id:"U5",name:"Undertavle -U5"}],
+    circuits:[
+      C({name:"Stikledning, bygning 6 → -U1",from:"T",kind:"board",toBoard:"U1",note:"Opgaven: længde 70 m, i jord og 1 m i rør gennem fundament. På transformerens lavspændingsside sidder sikringslister ISFL250 (NH1, maks. 250 A).",cable:{mat:"Al",ins:"XLPE",size:240,L:70,method:"D2",temp:15,soil:1,group:"jord",gn:1},prot:{type:"gG",In:250,Icu:120}}),
+      C({name:"Forsyning -U2",from:"U1",kind:"board",toBoard:"U2",factor:.7,note:"Længde anslået – mål på bilag 4.",cable:{L:40,method:"E",group:"stige",gn:4,temp:37},prot:{type:"MCCB",Icu:36}}),
+      C({name:"Forsyning -U3",from:"U1",kind:"board",toBoard:"U3",factor:.6,note:"Længde anslået – mål på bilag 4.",cable:{L:60,method:"E",group:"stige",gn:4,temp:37},prot:{type:"MCCB",Icu:36}}),
+      C({name:"Forsyning -U4",from:"U1",kind:"board",toBoard:"U4",factor:1,note:"Længde anslået – mål på bilag 4.",cable:{L:50,method:"E",group:"stige",gn:4,temp:37},prot:{type:"MCCB",Icu:36}}),
+      C({name:"Forsyning -U5",from:"U1",kind:"board",toBoard:"U5",factor:.8,note:"Længde anslået – mål på bilag 3.",cable:{L:35,method:"E",group:"stige",gn:4,temp:32},prot:{type:"gG",Icu:100}}),
+      C({name:"Metro vandvarmer, pos. 13",from:"U1",kind:"fixed",load:{type:"S",val:3,cos:1,phases:3},cable:{L:25,...hal,temp:32},prot:{type:"MCB-B",Icu:15}}),
+      C({name:"16 A CEE, pos. 16",from:"U1",kind:"socket",n:2,factor:.6,load:{type:"I",val:16,cos:1,phases:3},cable:{L:45,...hal,temp:32},prot:{type:"MCB-C",Icu:15}}),
+      C({name:"32 A CEE, pos. 17",from:"U1",kind:"socket",n:2,factor:.6,load:{type:"I",val:32,cos:1,phases:3},cable:{L:30,...hal,temp:32},prot:{type:"MCB-C",Icu:15}}),
+      C({name:"Anden last",from:"U1",kind:"other",factor:.7,dim:false,load:{type:"S",val:175,cos:.88,phases:3}}),
+      M("Båndsav, pos. 2","U2",4,"gG+TR"),
+      C({name:"Kehler, pos. 6",from:"U2",kind:"motor",note:"Smeltesikring og termorelæ. Kabelbakke.",load:{type:"motor",motorKw:5.5,phases:3},cable:{L:15,...hal},prot:{type:"gG+TR",Icu:50}}),
+      C({name:"Fræser, pos. 7",from:"U2",kind:"motor",note:"Lukket gulvkanal til stander.",load:{type:"motor",motorKw:4,phases:3},cable:{L:12,method:"B2",group:"bundt",gn:2,temp:37},prot:{type:"MMS",Icu:50}}),
+      M("Gulvsug, pos. 9","U2",5.5,"MMS"),
+      M("Kædestemmer, pos. 10","U2",7.5,"MMS"),
+      C({name:"16 A CEE, pos. 14",from:"U2",kind:"socket",n:4,factor:.3,dim:false,load:{type:"I",val:16,phases:3}}),
+      C({name:"32 A CEE, pos. 15",from:"U2",kind:"socket",dim:false,load:{type:"I",val:32,phases:3}}),
+      C({name:"Spånsuger, pos. A",from:"U3",kind:"motor",note:"Udvendig, skærmet kabelbakke.",load:{type:"motor",motorKw:11,phases:3},cable:{L:15,method:"E",group:"bakke",gn:5,temp:30},prot:{type:"MCCB",Icu:36}}),
+      M("Ventilator RV50, pos. B","U3",11,"MCCB"),
+      C({name:"Jetfilteranlæg, pos. C",from:"U3",kind:"other",dim:false,load:{type:"I",val:10,cos:1,phases:1}}),
+      C({name:"Ventilator VP-900, pos. D",from:"U3",kind:"motor",note:"Tungstart i 7 s. Beskyttelse vælges og indstilles.",load:{type:"motor",motorKw:30,phases:3,startTime:7},cable:{L:15,method:"E",group:"bakke",gn:5,temp:30},prot:{type:"MCCB",Icu:36}}),
+      M("Indblæsning ZCN, pos. E","U3",5.5,"MMS"),
+      M("Kompressor","U3",15,"MCCB"),
+      C({name:"16 A CEE, pos. 18",from:"U3",kind:"socket",n:3,factor:.4,dim:false,load:{type:"I",val:16,phases:3}}),
+      M("Afkorter, pos. 1","U4",4,"MMS"),M("Rundsav, pos. 3","U4",5.5,"MMS"),M("Afretter, pos. 4","U4",5.5,"MMS"),M("Tykkelseshøvl, pos. 5","U4",4,"MMS"),M("Båndpudser, pos. 12","U4",5.5,"MMS"),
+      C({name:"Metro vandvarmer, pos. 8",from:"U4",kind:"fixed",dim:false,load:{type:"P",val:3,cos:1,phases:3}}),
+      C({name:"16 A CEE, pos. 11",from:"U4",kind:"socket",n:2,factor:.7,dim:false,load:{type:"I",val:16,phases:3}}),
+      C({name:"Belysning",from:"U4",kind:"light",note:"Afstand fra tavle til fjerneste lampe 18 m. Kapacitiv last, cos φ 0,92.",load:{type:"P",val:.1,cos:.92,cap:true,phases:1},cable:{L:18,method:"C",group:"vaeg",gn:1,temp:25},prot:{type:"MCB-B",Icu:10}}),
+      C({name:"Belysning 230 V",from:"U5",kind:"light",n:7,dim:false,load:{type:"I",val:10,cos:.92,cap:true,phases:1}}),
+      C({name:"Belysning 3×400 V",from:"U5",kind:"light",n:2,dim:false,load:{type:"I",val:10,cos:.92,cap:true,phases:3}}),
+      C({name:"230 V stikkontakter",from:"U5",kind:"socket",n:4,dim:false,load:{type:"I",val:10,phases:1}}),
+      C({name:"230 V stikk. EDB",from:"U5",kind:"socket",n:6,dim:false,load:{type:"I",val:10,phases:1}}),
+      C({name:"Anden last 16 A",from:"U5",kind:"other",n:2,dim:false,load:{type:"I",val:16,phases:3}}),
+      C({name:"Anden last 13 A",from:"U5",kind:"other",n:2,dim:false,load:{type:"I",val:13,phases:3}})
+    ]};
+  return P;
+}
+
+/* ======================== BEREGNING ======================== */
+function source(P){
+  const S=P.settings,Un=S.Un;
+  const stiff=!!P.net.stiff;
+  const ZQ=stiff?0:S.cmax*Un*Un/(P.net.Sk*1e6)*1000;
+  const XQ=ZQ/Math.sqrt(1+P.net.rx**2),RQ=P.net.rx*XQ;
+  const Ur=P.trafo.Ur,Sr=P.trafo.S*1000;
+  const ZT=P.trafo.ek/100*Ur*Ur/Sr*1000,RT=P.trafo.Pk*Ur*Ur/(Sr*Sr)*1000,XT=Math.sqrt(Math.max(0,ZT*ZT-RT*RT));
+  const xT=XT/(Ur*Ur/Sr*1000),KT=S.useKT?0.95*S.cmax/(1+0.6*xT):1;
+  const zQ={r:RQ,x:XQ},zT={r:RT*KT,x:XT*KT};
+  return {ZQ,XQ,RQ,ZT,RT,XT,xT,KT,zQ,zT,Z1:cadd(zQ,zT),Zl:cadd(cmul(zQ,2/3),zT),InT:Sr/(SQ3*Un)};
+}
+function ikSet(P,Z1max,Z1min,Zlmax,Zlmin){
+  const S=P.settings,Un=S.Un;
+  return {Z1max,Z1min,Zlmax,Zlmin,
+    ik3max:S.cmax*Un*1000/(SQ3*cabs(Z1max)),ik3min:S.cmin*Un*1000/(SQ3*cabs(Z1min)),
+    ik2min:S.cmin*Un*1000/(2*cabs(Z1min)),ik1max:S.cmax*Un/SQ3*1000/cabs(Zlmax),ik1min:S.cmin*Un/SQ3*1000/cabs(Zlmin)};
+}
+function thetaMin(P,c){return P.settings.thetaMin==="drift"?THETA_OP[c.cable.ins]:+P.settings.thetaMin}
+function cableZ(c,theta){
+  const cb=c.cable,a=ALPHA[cb.mat],f=theta==null?1:1+a*(theta-20),par=Math.max(1,+cb.par||1);
+  const rp=R20[cb.mat][sizeIdx(cb.size)],pe=cb.pe==="same"?cb.size:cb.pe,rpe=R20[cb.mat][sizeIdx(pe)];
+  const L={r:rp*f*cb.L/par,x:cb.x*cb.L/par},PE={r:(rpe??NaN)*f*cb.L/par,x:cb.x*cb.L/par};
+  return {L,PE,rp,rpe,f,pe,par};
+}
+function phasesOf(c){return c.kind==="board"||c.kind==="motor"?3:(+c.load.phases===1?1:3)}
+
+function makeEngine(P){
+  const S=P.settings,src=source(P),memoB={},memoC={};
+  const supplyOf=b=>P.circuits.find(c=>c.kind==="board"&&c.toBoard===b);
+  function boardSum(bid,stack=[]){
+    if(memoB[bid])return memoB[bid];
+    if(stack.includes(bid))return {P:0,Q:0,S:0,I:0,cos:1,rows:[],loop:true};
+    let Pt=0,Qt=0;const rows=[];
+    for(const c of P.circuits.filter(c=>c.from===bid)){
+      const lo=loadOf(c,[...stack,bid]);const k=(+c.n||1)*(+c.factor||0);
+      rows.push({c,lo,k,P:lo.P*k,Q:lo.Q*k});Pt+=lo.P*k;Qt+=lo.Q*k;
+    }
+    const St=Math.hypot(Pt,Qt);
+    return memoB[bid]={P:Pt,Q:Qt,S:St,I:St/(SQ3*S.Un),cos:St?Pt/St:1,rows};
+  }
+  function loadOf(c,stack=[]){
+    const L=c.load,ph=phasesOf(c),U=ph===3?S.Un:S.U0,k=ph===3?SQ3:1;
+    if(c.kind==="board"){const b=boardSum(c.toBoard,stack);return {Ib:b.I,P:b.P,Q:b.Q,cos:b.cos,cap:b.Q<0,ph:3,how:"board",b}}
+    let Ib,cos=+L.cos||1,mot=null,how=L.type;
+    if(c.kind==="motor"){mot=motorOf(L.motorKw);Ib=mot.In;cos=mot.cos;how="motor"}
+    else if(L.type==="P")Ib=L.val*1000/(k*U*cos);
+    else if(L.type==="S")Ib=L.val*1000/(k*U);
+    else Ib=+L.val;
+    const Sva=k*U*Ib,sin=Math.sqrt(Math.max(0,1-cos*cos))*(L.cap&&c.kind!=="motor"?-1:1);
+    return {Ib,P:Sva*cos,Q:Sva*sin,cos,cap:L.cap&&c.kind!=="motor",ph,how,mot,U,k};
+  }
+  function chainOf(c){const ch=[],errs=[];let b=c.from,g=0;
+    while(b&&b!=="T"&&g++<20){const s=supplyOf(b);if(!s){errs.push(`Tavle ${b} har ingen forsyningskreds.`);break}
+      if(!s.dim)errs.push(`Forsyningen til ${b} er ikke sat til at blive dimensioneret, så dens kabel er ikke regnet med.`);
+      ch.unshift(s);b=s.from}
+    if(g>=20)errs.push("Kredsene danner en løkke.");return {ch,errs}}
+  function iz(c){
+    const cb=c.cable,ph=phasesOf(c),loaded=ph===3?3:2,i=sizeIdx(cb.size);
+    const base=IZ[cb.ins]?.[cb.mat]?.[loaded]?.[cb.method]?.[i]??null;
+    const ground=cb.method==="D1"||cb.method==="D2";
+    const kt=interp(ground?KTG[cb.ins]:KTA[cb.ins],cb.temp);
+    const ks=ground?interp(SOIL[cb.method],cb.soil):1;
+    const g=groupF(cb.group,+cb.gn||1);const par=Math.max(1,+cb.par||1);
+    return {base,loaded,ground,kt,ks,kg:g.f,nUsed:g.nUsed,par,iz:base==null?NaN:base*kt*ks*g.f*par,
+      ref:cb.method==="E"?IZREF[cb.ins].E:IZREF[cb.ins][loaded]};
+  }
+  function prot(c,tReq,lo){
+    const p=c.prot,t=p.type;let r={type:t};
+    if(t.startsWith("MCB")){const ch=t.slice(4);r={...r,In:+p.In,Iset:+p.In,I2f:1.45,I2:1.45*p.In,Ia:MCB_MAG[ch][1]*p.In,Ilow:MCB_MAG[ch][0]*p.In,inst:true,ref:"en60898",
+      iaTxt:`Ia = ${MCB_MAG[ch][1]} · In (øvre grænse for momentan udløsning, ${ch}-karakteristik)`}}
+    else if(t==="gG"){const f=p.In<=4?2.1:p.In<16?1.9:1.6,g=GG[p.In];r={...r,In:+p.In,Iset:+p.In,I2f:f,I2:f*p.In,Ia:g?(tReq<=0.4?g[1]:g[0]):NaN,inst:false,ref:"en60269",
+      iaTxt:`Ia aflæst for gG ${p.In} A ved ${fmt(tReq,1)} s (vejledende tabel, se Kilder)`}}
+    else if(t==="gG+TR"){const g=GG[p.In];r={...r,In:+p.In,Iset:+p.Ir,I2f:1.2,I2:1.2*p.Ir,Ia:g?(tReq<=0.4?g[1]:g[0]):NaN,inst:false,ref:"en60947_4",
+      iaTxt:`Kortslutning: gG ${p.In} A, Ia ved ${fmt(tReq,1)} s (vejledende tabel). Overbelastning: termorelæ Ir = ${fmt(+p.Ir,1)} A`}}
+    else if(t==="MMS"){r={...r,In:+p.Ir,Iset:+p.Ir,I2f:1.2,I2:1.2*p.Ir,Ia:1.2*p.Im,Ilow:0.8*p.Im,Im:+p.Im,inst:true,ref:"en60947_4",
+      iaTxt:`Ia = 1,2 · Im (magnetudløser ${fmt(+p.Im,0)} A + 20 % tolerance)`}}
+    else if(t==="MCCB"){r={...r,In:+p.In,Iset:+p.Ir,I2f:1.3,I2:1.3*p.Ir,Ia:1.2*p.Im,Ilow:0.8*p.Im,Im:+p.Im,inst:true,ref:"en60947_2",
+      iaTxt:`Ia = 1,2 · Ii (momentan udløser ${fmt(+p.Im,0)} A + 20 % tolerance)`}}
+    if(+p.IaOv>0){r.Ia=+p.IaOv;r.iaTxt=`Ia indtastet manuelt (${fmt(+p.IaOv,0)} A), fx aflæst på producentens kurve`}
+    return r;
+  }
+  function tReqOf(c){
+    if(c.prot.t!=="auto")return {t:+c.prot.t,why:"valgt manuelt"};
+    const rating=c.prot.type==="MCCB"||c.prot.type==="MMS"?+c.prot.Ir:+c.prot.In;
+    if(c.kind==="board")return {t:5,why:"fordelingskreds (411.3.2.3)"};
+    if(c.kind==="socket"&&rating<=63)return {t:0.4,why:"gruppe med stikkontakter ≤ 63 A (411.3.2.2, tabel 41.1, TN 230 V)"};
+    if(rating<=32)return {t:0.4,why:"gruppe ≤ 32 A til fast tilsluttet materiel (411.3.2.2, tabel 41.1, TN 230 V)"};
+    return {t:5,why:"gruppe > 32 A (411.3.2.3)"};
+  }
+  function du(c,lo){
+    const cb=c.cable,ph=lo.ph,U=ph===3?S.Un:S.U0,k=ph===3?SQ3:2,th=THETA_OP[cb.ins];
+    const rq=R20[cb.mat][sizeIdx(cb.size)]*(1+ALPHA[cb.mat]*(th-20)),par=Math.max(1,+cb.par||1);
+    const sin=Math.sqrt(Math.max(0,1-lo.cos*lo.cos))*(lo.cap?-1:1);
+    const dV=k*lo.Ib*cb.L/1000*(rq*lo.cos+cb.x*sin)/par;
+    return {U,k,th,rq,sin,dV,pct:dV/U*100,par};
+  }
+  function evalC(c){
+    if(memoC[c.id])return memoC[c.id];
+    const lo=loadOf(c),{ch,errs}=chainOf(c);
+    const thFor=x=>thetaMin(P,x);
+    let z1max=src.Z1,z1min=src.Z1,zlmax=src.Zl,zlmin=src.Zl,duUp=0;const elems=[];
+    for(const s of ch){if(!s.dim)continue;const a=cableZ(s,null),b=cableZ(s,thFor(s));
+      z1max=cadd(z1max,a.L);z1min=cadd(z1min,b.L);zlmax=cadd(zlmax,a.L,a.PE);zlmin=cadd(zlmin,b.L,b.PE);
+      const sr=evalC(s);duUp+=sr.du?sr.du.pct:0;elems.push({c:s,a,b})}
+    const start=ikSet(P,z1max,z1min,zlmax,zlmin);
+    const res={c,lo,ch,errs,start,duUp,elems,src};
+    if(!c.dim){memoC[c.id]=res;return res}
+    const a=cableZ(c,null),b=cableZ(c,thFor(c));
+    res.za=a;res.zb=b;
+    res.end=ikSet(P,cadd(z1max,a.L),cadd(z1min,b.L),cadd(zlmax,a.L,a.PE),cadd(zlmin,b.L,b.PE));
+    res.iz=iz(c);res.treq=tReqOf(c);res.pr=prot(c,res.treq.t,lo);res.du=du(c,lo);
+    res.duTot=duUp+res.du.pct;res.duLim=c.kind==="light"?+S.duLight:+S.duOther;
+    const k=KADI[c.cable.ins][c.cable.mat],par=Math.max(1,+c.cable.par||1);
+    const ikPh=Math.min(res.end.ik2min,res.end.ik1min);
+    const fuse=(c.prot.type==="gG"||c.prot.type==="gG+TR")&&!(+c.prot.IaOv>0)&&GG[c.prot.In];
+    const tOf=I=>fuse?fuseTime(+c.prot.In,I):(res.pr.inst&&I>=res.pr.Ia?0.1:res.treq.t);
+    const tTrip=tOf(ikPh),tTripPE=tOf(res.end.ik1min);
+    res.adi={k,ikPh,tTrip,tTripPE,tPh:(k*c.cable.size*par/ikPh)**2,tPE:(k*(+a.pe)*par/res.end.ik1min)**2};
+    if(c.kind==="motor"){const m=lo.mot,Is=m.In*m.IsIn,inr=S.inrush*Is;
+      const lim=res.pr.inst?(c.prot.type.startsWith("MCB")?res.pr.Ilow:(S.startCmp==="nom"?res.pr.Im:res.pr.Ilow)):NaN;
+      res.mst={Is,inr,lim,ok:res.pr.inst?inr<lim:null}}
+    const pr=res.pr,ck=[];
+    ck.push({k:"Ib ≤ In",ok:lo.Ib<=pr.Iset+1e-9,v:`${fA(lo.Ib)} ≤ ${fA(pr.Iset)}`});
+    ck.push({k:"In ≤ Iz",ok:pr.Iset<=res.iz.iz+1e-9,v:`${fA(pr.Iset)} ≤ ${fA(res.iz.iz)}`});
+    ck.push({k:"Fejlbeskyttelse: Ik1,min ≥ Ia",ok:res.end.ik1min>=pr.Ia,v:`${fA(res.end.ik1min)} ≥ ${fA(pr.Ia)} (${fmt(res.treq.t,1)} s)`});
+    ck.push({k:"Brydeevne: Icu ≥ Ik3,max ved værnet",ok:c.prot.Icu*1000>=Math.max(start.ik3max,start.ik1max),v:`${fmt(+c.prot.Icu,0)} kA ≥ ${fA(Math.max(start.ik3max,start.ik1max))}`});
+    ck.push({k:"Leder tåler kortslutning (k²S² ≥ I²t)",ok:res.adi.tPh>=res.adi.tTrip&&res.adi.tPE>=res.adi.tTripPE,v:`tilladt ${fmt(Math.min(res.adi.tPh,res.adi.tPE),2)} s ≥ ${fmt(Math.max(res.adi.tTrip,res.adi.tTripPE),1)} s`});
+    ck.push({k:`Spændingsfald ≤ ${fmt(res.duLim,1)} %`,ok:res.duTot<=res.duLim+1e-9,v:`${fmt(res.duTot,2)} % i alt`});
+    if(res.mst&&res.mst.ok!==null)ck.push({k:"Motorstart: indkoblingsstrøm under magnetudløser",ok:res.mst.ok,v:`${fA(res.mst.inr)} < ${fA(res.mst.lim)}`});
+    if(errs.length)ck.push({k:"Forsyningsvej",ok:false,v:errs[0]});
+    if(!Number.isFinite(res.iz.iz))ck.push({k:"Tabelværdi findes",ok:false,v:"Kombinationen findes ikke i tabellen (Al kun fra 16 mm²)"});
+    res.checks=ck;res.ok=ck.every(x=>x.ok);
+    memoC[c.id]=res;return res;
+  }
+  function busOf(bid){if(bid==="T"){const z=src;return ikSet(P,z.Z1,z.Z1,z.Zl,z.Zl)}const s=supplyOf(bid);if(!s||!s.dim)return null;return evalC(s).end}
+  return {src,boardSum,loadOf,evalC,busOf,supplyOf,iz,tReqOf};
+}
+
+/* ======================== AUTO-DIMENSIONERING ======================== */
+function nextIn(list,x){return list.find(v=>v>=x-1e-9)??list[list.length-1]}
+function autoProt(P,c){
+  const E=makeEngine(P),lo=E.loadOf(c),Ib=lo.Ib,p=c.prot,S=P.settings;
+  const mot=c.kind==="motor"?lo.mot:null,inr=mot?S.inrush*mot.In*mot.IsIn:0;
+  const sock=c.kind==="socket"?+c.load.val:0;
+  if(p.type.startsWith("MCB")){p.In=nextIn(MCB_IN,Math.max(Ib,sock))}
+  else if(p.type==="gG"){p.In=nextIn(Object.keys(GG).map(Number),Math.max(Ib,sock))}
+  else if(p.type==="gG+TR"){p.Ir=+Ib.toFixed(1);p.In=nextIn(Object.keys(GG).map(Number),Math.max(Ib*1.6,mot?mot.In*mot.IsIn/4:0))}
+  else if(p.type==="MMS"){p.Ir=+Ib.toFixed(1);const need=S.startCmp==="nom"?inr:inr/0.8;
+    let r=MMS_R.find(([lo,hi])=>lo<=Ib&&Ib<=hi&&13*hi>need)||MMS_R.find(([lo,hi])=>lo<=Ib&&Ib<=hi)||MMS_R.at(-1);p.Im=13*r[1]}
+  else if(p.type==="MCCB"){p.In=nextIn(MCCB_IN,Ib);p.Ir=Math.ceil(Ib);
+    const need=mot?(S.startCmp==="nom"?inr*1.05:inr/0.8*1.05):0;p.Im=Math.max(10*p.In,Math.ceil(need/10)*10)}
+}
+function autoSize(P,c){
+  const sizes=SZ.filter(s=>R20[c.cable.mat][sizeIdx(s)]!=null);
+  const wasPe=c.cable.pe;let fb=null;
+  for(let par=Math.max(1,+c.cable.par||1);par<=4;par++){
+    c.cable.par=par;
+    for(const s of sizes){c.cable.size=s;if(wasPe!=="same")c.cable.pe=s>16?Math.max(16,SZ.find(z=>z>=s/2)||s):s;
+      const r=makeEngine(P).evalC(c);
+      const need=r.checks.filter(x=>!x.k.startsWith("Brydeevne")&&!x.k.startsWith("Motorstart"));
+      const feedOk=c.kind!=="board"||r.du.pct<=+P.settings.duFeed+1e-9;
+      if(need.every(x=>x.ok)&&feedOk)return true;
+      if(!fb&&need.every(x=>x.ok||x.k.startsWith("Spændingsfald")))fb={par,s};}
+    if(c.kind!=="board")break;
+  }
+  if(fb){c.cable.par=fb.par;c.cable.size=fb.s;if(wasPe!=="same")c.cable.pe=fb.s}else{c.cable.par=1;c.cable.size=sizes.at(-1)}
+  return false;
+}
+function depth(P,c){let d=0,b=c.from;while(b!=="T"&&d<20){const s=P.circuits.find(x=>x.kind==="board"&&x.toBoard===b);if(!s)break;b=s.from;d++}return d}
+function autoAll(P){const cs=P.circuits.filter(c=>c.dim).sort((a,b)=>depth(P,a)-depth(P,b));for(const c of cs){autoProt(P,c);autoSize(P,c)}}
+
+/* ======================== DOKUMENTATION (trin for trin) ======================== */
+const cite=(k,extra)=>({k,extra});
+function docSteps(P,r){
+  const c=r.c,S=P.settings,lo=r.lo,steps=[];const cb=c.cable,pr=r.pr;
+  const Uname=lo.ph===3?"U":"U0",Uv=lo.ph===3?S.Un:S.U0;
+  // 1 belastning
+  {const L=[];let src=[cite("opg","belastningsoversigt")];
+   if(lo.how==="motor"){const m=lo.mot;L.push({t:`Motor ${fS(m.kw)} kW fra bilag 1: In = ${fmt(m.In,1)} A, cos φ = ${fmt(m.cos,2)}, η = ${fmt(m.eta,1)} %, IS/IN = ${fmt(m.IsIn,1)}`},{f:"Ib = In (motorens mærkestrøm ved 400 V)",r:`Ib = ${fmt(lo.Ib,2)} A`});src.push(cite("bilag1"))}
+   else if(lo.how==="board"){L.push({f:"Ib = √(ΣP² + ΣQ²) / (√3 · U)",s:`= √(${fmt(lo.P/1000,2)}² + ${fmt(lo.Q/1000,2)}²) kVA / (√3 · ${S.Un} V)`,r:`Ib = ${fmt(lo.Ib,1)} A   (cos φ = ${fmt(lo.cos,3)})`},{t:"ΣP og ΣQ er summen af alle kredse på tavlen ganget med antal og samtidighedsfaktor. Se fanen Belastning."})}
+   else if(lo.how==="P"){L.push(lo.ph===3?{f:"Ib = P / (√3 · U · cos φ)",s:`= ${fmt(c.load.val*1000,0)} W / (√3 · ${S.Un} V · ${fmt(lo.cos,2)})`}:{f:"Ib = P / (U0 · cos φ)",s:`= ${fmt(c.load.val*1000,0)} W / (${S.U0} V · ${fmt(lo.cos,2)})`});L.at(-1).r=`Ib = ${fmt(lo.Ib,2)} A`}
+   else if(lo.how==="S"){L.push(lo.ph===3?{f:"Ib = S / (√3 · U)",s:`= ${fmt(c.load.val*1000,0)} VA / (√3 · ${S.Un} V)`}:{f:"Ib = S / U0",s:`= ${fmt(c.load.val*1000,0)} VA / ${S.U0} V`});L.at(-1).r=`Ib = ${fmt(lo.Ib,2)} A`}
+   else L.push({f:"Ib = angivet strøm",r:`Ib = ${fmt(lo.Ib,2)} A`});
+   if(lo.cap)L.push({t:"Kapacitiv last: Q regnes negativ."});
+   if(+c.n>1)L.push({t:`Kredsen findes ${c.n} gange. Ib gælder for én kreds.`});
+   steps.push({h:"Belastningsstrøm Ib",L,src})}
+  // 2 værn
+  {const L=[{t:PROT_T[c.prot.type]+(c.prot.type==="MCCB"?`, In = ${c.prot.In} A, Ir = ${fmt(+c.prot.Ir,1)} A, Ii = ${fmt(+c.prot.Im,0)} A`:c.prot.type==="MMS"?`, Ir = ${fmt(+c.prot.Ir,1)} A, Im = ${fmt(+c.prot.Im,0)} A`:c.prot.type==="gG+TR"?`, gG ${c.prot.In} A, termorelæ Ir = ${fmt(+c.prot.Ir,1)} A`:`, In = ${c.prot.In} A`)}];
+   L.push({f:`${c.prot.type==="MCCB"||c.prot.type==="MMS"||c.prot.type==="gG+TR"?"Ir":"In"} = ${fmt(pr.Iset,1)} A`,r:"Bruges i kontrollen Ib ≤ In ≤ Iz"});
+   if(c.kind==="motor"&&+c.load.startTime>0){const st=+c.load.startTime,cls=st<4?"10A":st<6?"10":st<9?"20":"30";
+     L.push({t:`Starttid ${fmt(st,0)} s. Udløseklassens mindste udløsetid ved 7,2 · Ir skal være længere end starttiden: klasse 10A 2–10 s, 10 4–10 s, 20 6–20 s, 30 9–30 s. Vælg klasse ${cls}.`})}
+   steps.push({h:"Overstrømsbeskyttelse",L,src:[cite(pr.ref),cite("hd43","433.1")]})}
+  // 3 Iz
+  {const z=r.iz,L=[];
+   L.push({t:`${METHODS[cb.method]}. ${cb.ins==="XLPE"?"PEX":"PVC"}-isoleret ${cb.mat==="Cu"?"kobber":"aluminium"}, ${z.loaded} belastede ledere, ${fS(cb.size)} mm².`});
+   L.push({f:`Iz,tabel = ${fmt(z.base,1)} A`,s:`Tabel ${z.ref}, metode ${cb.method}`});
+   L.push({f:`kt = ${fmt(z.kt,3)}`,s:`${z.ground?"Jordtemperatur":"Lufttemperatur"} ${fmt(+cb.temp,0)} °C, tabel ${z.ground?"B.52.15 (reference 20 °C)":"B.52.14 (reference 30 °C)"}, lineær interpolation`});
+   if(z.ground)L.push({f:`ks = ${fmt(z.ks,3)}`,s:`Jordens termiske modstand ${fmt(+cb.soil,2)} K·m/W, tabel B.52.16 (reference 2,5 K·m/W)`});
+   L.push({f:`kg = ${fmt(z.kg,2)}`,s:`${GROUPS[cb.group].t}, ${cb.gn} kreds(e), tabel ${GROUPS[cb.group].ref}${z.nUsed!=cb.gn?` (værdi for ${z.nUsed})`:""}`});
+   L.push({f:`Iz = Iz,tabel · kt${z.ground?" · ks":""} · kg${z.par>1?" · n":""}`,s:`= ${fmt(z.base,1)} · ${fmt(z.kt,3)}${z.ground?" · "+fmt(z.ks,3):""} · ${fmt(z.kg,2)}${z.par>1?" · "+z.par:""}`,r:`Iz = ${fmt(z.iz,1)} A`});
+   if(z.par>1)L.push({t:`${z.par} parallelle kabler. Hvert kabel skal tælles med i antal kredse ved samlet fremføring.`});
+   steps.push({h:"Kablets strømværdi Iz",L,src:[cite("hd52",`bilag B, tabel ${z.ref}, B.52.14–B.52.19`)]})}
+  // 4 overbelastning
+  {const L=[{f:"Ib ≤ In ≤ Iz",s:`${fmt(lo.Ib,1)} A ≤ ${fmt(pr.Iset,1)} A ≤ ${fmt(r.iz.iz,1)} A`,r:(lo.Ib<=pr.Iset&&pr.Iset<=r.iz.iz)?"Opfyldt":"Ikke opfyldt"}];
+   steps.push({h:"Beskyttelse mod overbelastning",L,src:[cite("hd43","433.1")]})}
+  // 5 impedanser
+  {const s=r.src,L=[];
+   if(P.net.stiff)L.push({f:"Stift net: S″kQ → ∞",r:"ZQ = 0 mΩ"},{t:"Nettet foran transformeren regnes uden impedans. Kun transformer og kabler begrænser kortslutningsstrømmen."});
+   else{L.push({f:"ZQ = c · Un² / S\"kQ",s:`= ${fmt(S.cmax,2)} · ${S.Un}² / ${fmt(P.net.Sk,0)} MVA`,r:`ZQ = ${fmt(s.ZQ,3)} mΩ`});
+   L.push({f:"XQ = ZQ / √(1 + (R/X)²),  RQ = (R/X) · XQ",s:`R/X = ${fmt(P.net.rx,2)}`,r:`ZQ = ${fZ(s.zQ)} mΩ`});}
+   L.push({f:"ZT = uk · UrT² / SrT",s:`= ${fmt(P.trafo.ek/100,3)} · ${P.trafo.Ur}² / ${fmt(P.trafo.S,0)} kVA`,r:`ZT = ${fmt(s.ZT,3)} mΩ`});
+   L.push({f:"RT = Pk · UrT² / SrT²,  XT = √(ZT² − RT²)",s:`= ${fmt(P.trafo.Pk,0)} W · ${P.trafo.Ur}² / (${fmt(P.trafo.S,0)} kVA)²`,r:`ZT = ${fmt(s.RT,3)} + j${fmt(s.XT,3)} mΩ`});
+   if(S.useKT)L.push({f:"KT = 0,95 · cmax / (1 + 0,6 · xT)",s:`= 0,95 · ${fmt(S.cmax,2)} / (1 + 0,6 · ${fmt(s.xT,4)})`,r:`KT = ${fmt(s.KT,4)}`});
+   L.push({t:"Kabler: R = R20′ · (1 + α · (θ − 20 °C)) · L / n,  X = X′ · L / n. Maks.-værdier ved 20 °C, min.-værdier ved θ = "+fmt(thetaMin(P,c),0)+" °C."});
+   steps.push({h:"Impedanser",L,src:[cite("iec60909","afsnit 6.2 (net), 6.3 (transformer), tabel 1 (c-faktor)"),cite("iec60228","tabel 2, R20"),cite("opg","net- og transformerdata")],imp:true})}
+  // 6 Ik
+  {const e=r.end,st=r.start,L=[];
+   const one=(nm,z,cc,div,ik,lbl)=>({f:`${nm} = ${cc} · ${div} / |${lbl}|`,s:`= ${fmt(cc==="cmax"?S.cmax:S.cmin,2)} · ${div==="Un"?S.Un:div==="Un / √3"?fmt(S.Un/SQ3,1):S.Un} V${div==="Un / (√3)"?"":""} / ${fmt(cabs(z),2)} mΩ`,r:`${nm} = ${fA(ik)}`});
+   L.push({t:"Ved kredsens begyndelse (værnets placering):"});
+   L.push({f:"Ik3,max = cmax · Un / (√3 · |Z1,max|)",s:`= ${fmt(S.cmax,2)} · ${S.Un} / (√3 · ${fmt(cabs(st.Z1max),2)} mΩ)`,r:`Ik3,max = ${fA(st.ik3max)}`});
+   L.push({f:"Ik1,max = cmax · Un / √3 / |ZS,max|",s:`= ${fmt(S.cmax,2)} · ${fmt(S.Un/SQ3,1)} / ${fmt(cabs(st.Zlmax),2)} mΩ`,r:`Ik1,max = ${fA(st.ik1max)}`});
+   L.push({t:"Ved kredsens slutning (fjerneste punkt):"});
+   L.push({f:"Z1,min = ZQ + ZT + Σ ZL(θ)",r:`Z1,min = ${fZ(e.Z1min)} mΩ`});
+   L.push({f:"Ik2,min = cmin · Un / (2 · |Z1,min|)",s:`= ${fmt(S.cmin,2)} · ${S.Un} / (2 · ${fmt(cabs(e.Z1min),2)} mΩ)`,r:`Ik2,min = ${fA(e.ik2min)}`});
+   L.push({f:"ZS,min = ⅔ · ZQ + ZT + Σ (ZL + ZPE)(θ)",r:`ZS,min = ${fZ(e.Zlmin)} mΩ`});
+   L.push({f:"Ik1,min = cmin · Un / √3 / |ZS,min|",s:`= ${fmt(S.cmin,2)} · ${fmt(S.Un/SQ3,1)} / ${fmt(cabs(e.Zlmin),2)} mΩ`,r:`Ik1,min = ${fA(e.ik1min)}`});
+   L.push({f:"Ik3,max (slut) = cmax · Un / (√3 · |Z1,max|)",s:`= ${fmt(S.cmax,2)} · ${S.Un} / (√3 · ${fmt(cabs(e.Z1max),2)} mΩ)`,r:`Ik3,max = ${fA(e.ik3max)}`});
+   L.push({t:"ZS er sløjfeimpedansen fase–PE. ⅔ · ZQ kommer fra de symmetriske komposanter: nettet over en Dyn-transformer indgår ikke i nulsystemet, og transformerens nulimpedans sættes lig ZT."});
+   steps.push({h:"Kortslutningsstrømme",L,src:[cite("iec60909","ligning (29) Ik3, (44) Ik2, (52) Ik1; cmax/cmin tabel 1")]})}
+  // 7 kortslutningsbeskyttelse
+  {const a=r.adi,L=[];const ikS=Math.max(r.start.ik3max,r.start.ik1max);
+   L.push({f:"Icu ≥ Ik,max ved værnets placering",s:`${fmt(+c.prot.Icu,0)} kA ≥ ${fA(ikS)}`,r:c.prot.Icu*1000>=ikS?"Opfyldt":"Ikke opfyldt"});
+   L.push({f:"t ≤ (k · S / I)²",s:`k = ${a.k} (${cb.ins==="XLPE"?"PEX":"PVC"}, ${cb.mat})`});
+   L.push({f:"Faseleder: t,tilladt = (k · S / Ik,min)²",s:`= (${a.k} · ${fS(cb.size)}${r.iz.par>1?" · "+r.iz.par:""} / ${fmt(a.ikPh,0)})²`,r:`t,tilladt = ${fmt(a.tPh,3)} s ≥ ${fmt(a.tTrip,1)} s → ${a.tPh>=a.tTrip?"Opfyldt":"Ikke opfyldt"}`});
+   L.push({f:"PE-leder: t,tilladt = (k · SPE / Ik1,min)²",s:`= (${a.k} · ${fS(+r.za.pe)}${r.iz.par>1?" · "+r.iz.par:""} / ${fmt(r.end.ik1min,0)})²`,r:`t,tilladt = ${fmt(a.tPE,3)} s ≥ ${fmt(a.tTripPE,1)} s → ${a.tPE>=a.tTripPE?"Opfyldt":"Ikke opfyldt"}`});
+   L.push({t:pr.inst?"Udløsetid: momentan udløsning regnes som højst 0,1 s, når strømmen er over Ia. Ved tider under 0,1 s skal værnets gennemsluppne I²t fra producenten sammenlignes med k²S² = "+fmt((a.k*cb.size)**2/1e6,2)+" MA²s.":(c.prot.type.startsWith("gG")&&!(+c.prot.IaOv>0))?"Udløsetid: sikringens smeltetid ved strømmen er anslået ved log-log interpolation gennem tabelpunkterne for 5 s og 0,4 s, dog mindst 0,1 s. Under 0,1 s skal sikringens gennemsluppne I²t fra producenten sammenlignes med k²S² = "+fmt((a.k*cb.size)**2/1e6,2)+" MA²s.":"Udløsetid: kravet til udkoblingstid bruges som øvre grænse."});
+   steps.push({h:"Beskyttelse mod kortslutning",L,src:[cite("hd43","434.5.1 (brydeevne), 434.5.2 og tabel 43A (k-værdier)"),cite("hd54","543.1.2 (PE)")]})}
+  // 8 fejlbeskyttelse
+  {const L=[{t:`TN-system. Krævet udkoblingstid: ${fmt(r.treq.t,1)} s – ${r.treq.why}.`},{f:"Ia",r:pr.iaTxt},
+     {f:"Ik1,min ≥ Ia",s:`${fA(r.end.ik1min)} ≥ ${fA(pr.Ia)}`,r:r.end.ik1min>=pr.Ia?"Opfyldt":"Ikke opfyldt"},
+     {f:"Største længde for udkobling",r:`L,max ≈ ${fmt(maxLenFault(P,r),0)} m`}];
+   steps.push({h:"Fejlbeskyttelse (automatisk afbrydelse)",L,src:[cite("hd41","411.4.4, tabel 41.1, 411.3.2.2–411.3.2.3"),cite(pr.ref)]})}
+  // 9 spændingsfald
+  {const d=r.du,L=[];
+   L.push({f:`R′θ = R20′ · (1 + α · (${d.th} − 20))`,s:`= ${fmt(R20[cb.mat][sizeIdx(cb.size)],4)} · (1 + ${ALPHA[cb.mat]} · ${d.th-20})`,r:`R′ = ${fmt(d.rq,4)} Ω/km`});
+   L.push({f:`ΔU = ${lo.ph===3?"√3":"2"} · Ib · L · (R′ · cos φ + X′ · sin φ)${d.par>1?" / n":""}`,s:`= ${lo.ph===3?"√3":"2"} · ${fmt(lo.Ib,2)} · ${fmt(cb.L/1000,3)} km · (${fmt(d.rq,4)} · ${fmt(lo.cos,3)} + ${fmt(+cb.x,3)} · ${fmt(d.sin,3)})${d.par>1?" / "+d.par:""}`,r:`ΔU = ${fmt(d.dV,2)} V`});
+   L.push({f:`Δu = ΔU / ${Uname} · 100 %`,s:`= ${fmt(d.dV,2)} / ${Uv} · 100`,r:`Δu = ${fmt(d.pct,2)} %`});
+   if(r.duUp>0)L.push({f:"Δu,samlet = Δu,forsyning + Δu,kreds",s:`= ${fmt(r.duUp,2)} + ${fmt(d.pct,2)}`,r:`Δu,samlet = ${fmt(r.duTot,2)} %`});
+   L.push({f:`Δu,samlet ≤ ${fmt(r.duLim,1)} %`,r:r.duTot<=r.duLim?"Opfyldt":"Ikke opfyldt"});
+   L.push({t:`Grænse: ${c.kind==="light"?"belysning 3 %":"øvrige forbrugere 5 %"} for installation forsynet fra offentligt lavspændingsnet (type A). Regnet fra transformerens klemmer.`});
+   steps.push({h:"Spændingsfald",L,src:[cite("hd52","525 og bilag G, tabel G.52.1")]})}
+  // 10 motorstart
+  if(r.mst){const s=r.mst,L=[{f:"IS = In · IS/IN",s:`= ${fmt(lo.mot.In,1)} · ${fmt(lo.mot.IsIn,1)}`,r:`IS = ${fmt(s.Is,1)} A`},{f:`Iinrush = ${fmt(S.inrush,1)} · IS (t ≤ 15 ms)`,r:`Iinrush = ${fmt(s.inr,0)} A`}];
+   if(s.ok!==null)L.push({f:"Iinrush < magnetudløserens strøm",s:`${fmt(s.inr,0)} A < ${fmt(s.lim,0)} A (${c.prot.type.startsWith("MCB")?"nedre grænse for momentan udløsning":S.startCmp==="nom"?"indstillet værdi":"indstillet værdi − 20 %"})`,r:s.ok?"Opfyldt":"Ikke opfyldt – værnet kan udløse ved start"});
+   else L.push({t:"Smeltesikring: kontrollér på sikringens tid/strøm-kurve, at den ikke smelter ved IS i hele starttiden."});
+   steps.push({h:"Motorstart",L,src:[cite("opg","Iinrush = 2 · Istart, tinrush ≤ 15 ms"),cite("bilag1"),cite(pr.ref)]})}
+  return steps;
+}
+function fuseTime(In,I){const g=GG[In],n=Math.log(5/0.4)/Math.log(g[1]/g[0]);return Math.max(0.1,0.4*Math.pow(I/g[1],-n))}
+function maxLenFault(P,r){ // længde hvor Ik1,min = Ia
+  const c=r.c,S=P.settings,target=S.cmin*S.Un/SQ3*1000/r.pr.Ia;
+  const up=r.start.Zlmin,th=thetaMin(P,c),f=1+ALPHA[c.cable.mat]*(th-20),par=Math.max(1,+c.cable.par||1);
+  const rpm=(R20[c.cable.mat][sizeIdx(c.cable.size)]+R20[c.cable.mat][sizeIdx(r.za.pe)])*f/par,xpm=2*c.cable.x/par;
+  let lo=0,hi=100000;for(let i=0;i<60;i++){const m=(lo+hi)/2;Math.hypot(up.r+rpm*m,up.x+xpm*m)>target?hi=m:lo=m}
+  return Math.hypot(up.r,up.x)>target?0:lo;
+}
+function stepsText(P,r,steps){
+  const c=r.c;let t=`${c.name}\n${"=".repeat(c.name.length)}\n`;
+  steps.forEach((s,i)=>{t+=`\n${i+1}. ${s.h}\n`;if(WHY[s.h])t+=`   ${WHY[s.h]}\n\n`;s.L.forEach(l=>{if(l.t)t+=`   ${l.t}\n`;if(l.f)t+=`   ${l.f}\n`;if(l.s)t+=`     ${l.s}\n`;if(l.r)t+=`     ${l.r}\n`});
+    t+=`   Kilde: ${s.src.map(x=>SRC[x.k]+(x.extra?", "+x.extra:"")).join("; ")}\n`});
+  return t;
+}
+
+const WHY={
+ "Belastningsstrøm Ib":"Først findes den strøm, kredsen skal føre i normal drift. Alt andet dimensioneres ud fra den. For en motor bruges mærkestrømmen fra databladet. For en tavle lægges alle kredse på tavlen sammen, ganget med antal og samtidighedsfaktor, fordi ikke alt kører på samme tid.",
+ "Overstrømsbeskyttelse":"Værnet skal afbryde, før kablet bliver for varmt. Her bestemmes værnets mærkestrøm eller indstilling (In eller Ir), som bruges i kontrollen af overbelastning.",
+ "Kablets strømværdi Iz":"Iz er den strøm, kablet kan føre hele tiden, uden at isoleringen bliver for varm. Tabelværdien gælder for standardforhold: 30 °C i luft (20 °C i jord) og kablet alene. Varmere omgivelser og flere kabler tæt sammen giver dårligere køling, så tabelværdien ganges med korrektionsfaktorer.",
+ "Beskyttelse mod overbelastning":"Kablet er beskyttet mod overbelastning, når værnet er mindst lige så stort som belastningen, men ikke større end kablet kan tåle: Ib ≤ In ≤ Iz.",
+ "Impedanser":"For at regne kortslutningsstrømme skal alle impedanser fra spændingskilden til fejlstedet kendes: nettet bag transformeren, transformeren og hvert kabel på vejen. Den største strøm fås med kolde ledere (20 °C), den mindste med varme ledere, fordi modstanden stiger med temperaturen.",
+ "Kortslutningsstrømme":"Den største strøm (Ik,max) ved værnet bruges til at kontrollere, at værnet kan bryde strømmen. Den mindste strøm (Ik,min) i enden af kablet bruges til at kontrollere, at værnet udløser hurtigt nok ved en fejl langt ude. c-faktoren tager højde for, at netspændingen kan variere.",
+ "Beskyttelse mod kortslutning":"Værnet skal kunne afbryde den største kortslutningsstrøm uden at gå i stykker (brydeevne Icu). Desuden må lederne ikke blive så varme under kortslutningen, at isoleringen tager skade. Den energi, der slipper igennem (I²t), skal være mindre end den energi, lederen kan tåle (k²S²).",
+ "Fejlbeskyttelse (automatisk afbrydelse)":"Ved en isolationsfejl mellem en fase og en udsat del, fx et motorhus, kan der opstå farlig berøringsspænding. Værnet skal derfor afbryde inden for den tid, standarden kræver. Det sker kun, hvis fejlstrømmen Ik1,min er mindst lige så stor som den strøm Ia, der får værnet til at udløse inden for tiden.",
+ "Spændingsfald":"Strømmen giver et spændingsfald i kablet. Bliver det for stort, får udstyret for lav spænding: motorer starter dårligt, og lys flimrer. Spændingsfaldet lægges sammen fra transformeren og ud til forbrugeren og sammenlignes med grænsen.",
+ "Motorstart":"Når en motor starter, trækker den mange gange sin mærkestrøm i kort tid. Værnets magnetiske udløser må ikke slå fra under starten, så dens indstilling skal ligge over indkoblingsstrømmen.",
+ "Net og transformer":"Nettet og transformeren er spændingskilden for hele installationen. Deres impedanser bestemmer, hvor store kortslutningsstrømmene kan blive ved transformerens klemmer. Nettets impedans findes ud fra kortslutningseffekten, transformerens ud fra kortslutningsspændingen uk og kobbertabet Pk."
+};
+
+/* ======================== TILSTAND ======================== */
+const LS="elprojekt-v1";
+let P,sel=null;
+try{P=JSON.parse(localStorage.getItem(LS)||"null")}catch(e){P=null}
+if(!P||!P.circuits){P=example();autoAll(P)}
+function save(){try{localStorage.setItem(LS,JSON.stringify(P))}catch(e){}}
+function boardName(id){return id==="T"?"Transformer (bygning 6)":(P.boards.find(b=>b.id===id)?.name||id)}
+
+/* ======================== VISNING ======================== */
+const VIEWS=["vejledning","projekt","kredse","belastning","enstreg","selektivitet","kilder","gem"];
+function view(){const h=location.hash.slice(1);if(VIEWS.includes(h))return h;let seen=false;try{seen=!!localStorage.getItem("elprojekt-seen")}catch(e){}return seen?"kredse":"vejledning"}
+function render(){
+  const v=view();document.querySelectorAll("#tabs a").forEach(a=>a.setAttribute("aria-current",a.getAttribute("href")==="#"+v?"page":"false"));
+  $("#pname").textContent=P.name||"Elprojektering";
+  const m=$("#main");
+  ({vejledning:vVejl,projekt:vProjekt,kredse:vKredse,belastning:vBelastning,enstreg:vEnstreg,selektivitet:vSelekt,kilder:vKilder,gem:vGem})[v](m);
+}
+window.addEventListener("hashchange",render);
+function setTheme(t){if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t);else document.documentElement.removeAttribute("data-theme");
+  document.querySelectorAll(".theme button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.th===(t||"system")));
+  try{localStorage.setItem("elprojekt-tema",t||"system")}catch(e){}}
+document.querySelectorAll(".theme button").forEach(b=>b.onclick=()=>setTheme(b.dataset.th));
+{let t="system";try{t=localStorage.getItem("elprojekt-tema")||"system"}catch(e){}setTheme(t)}
+
+function inp(scope,path,val,o={}){const t=o.type||"number";
+  const el=`<input id="${scope}-${path}" data-scope="${scope}" data-k="${path}" type="${t}" ${t==="number"?`step="${o.step||"any"}" data-num="1"`:""} value="${esc(val)}">`;
+  return o.unit?`<div class="unit">${el}<span>${o.unit}</span></div>`:el}
+function sel_(scope,path,val,opts,num){return `<select id="${scope}-${path}" data-scope="${scope}" data-k="${path}" ${num?'data-num="1"':""} data-re="1">${opts.map(([v,t])=>`<option value="${esc(v)}" ${String(v)===String(val)?"selected":""}>${esc(t)}</option>`).join("")}</select>`}
+function fld(label,html,cls=""){return `<div class="field ${cls}"><span class="flabel">${label}</span>${html}</div>`}
+function chk(scope,path,val,label){return `<label class="chk"><input type="checkbox" id="${scope}-${path}" data-scope="${scope}" data-k="${path}" data-re="1" ${val?"checked":""}> ${label}</label>`}
+
+document.addEventListener("input",e=>{const el=e.target;if(!el.dataset?.k||el.type==="checkbox"||el.tagName==="SELECT")return;apply(el,false)});
+document.addEventListener("change",e=>{const el=e.target;if(!el.dataset?.k)return;if(el.type==="checkbox"||el.tagName==="SELECT")apply(el,true)});
+function apply(el,re){
+  const obj=el.dataset.scope==="c"?P.circuits.find(c=>c.id===sel):P;if(!obj)return;
+  let v=el.type==="checkbox"?el.checked:el.value;
+  if(el.dataset.num){if(v==="same"){}else v=v===""?0:+v}
+  setP(obj,el.dataset.k,v);
+  if(el.dataset.scope==="c"){const c=obj;
+    if(el.dataset.k==="kind"){if(c.kind==="motor")c.load.type="motor";else if(c.load.type==="motor")c.load.type="P";if(c.kind==="board"&&!c.toBoard)c.toBoard=P.boards.find(b=>b.id!==c.from)?.id||""}
+    if(el.dataset.k==="cable.mat"&&R20[c.cable.mat][sizeIdx(c.cable.size)]==null){c.cable.size=16;c.cable.pe="same"}
+    if(el.dataset.k==="cable.method"){if(c.cable.method==="D2"){c.cable.group="jord";c.cable.temp=15}else if(c.cable.method==="D1"){c.cable.group="jordror";c.cable.temp=15}else if(c.cable.group.startsWith("jord")){c.cable.group="bundt";c.cable.temp=30}}
+  }
+  save();
+  if(re)render();else refresh();
+}
+function refresh(){const v=view();if(v==="kredse"){renderList();renderResult()}else if(v==="projekt")renderSource();}
+
+/* ---------- Vejledning ---------- */
+function vVejl(m){
+  try{localStorage.setItem("elprojekt-seen","1")}catch(e){}
+  m.innerHTML=`<div class="stack guide">
+  <div class="panel"><h2>Hvad værktøjet gør</h2>
+   <p>Værktøjet dimensionerer en elinstallation fra transformeren og ud til den enkelte gruppe. For hver kreds finder det belastningsstrømmen, vælger værn og kabel og kontrollerer, at kablet er beskyttet mod overbelastning og kortslutning, at værnet afbryder hurtigt nok ved en fejl, og at spændingsfaldet er lille nok.</p>
+   <p>Alle beregninger vises trin for trin med formel, indsatte tal, resultat og henvisning til standarden. Teksten kan kopieres direkte ind i rapporten.</p>
+   <p class="note">Projektet "Hansens maskinfabrik" er indlæst som eksempel. Kabellængderne er gæt og skal måles på tegningerne.</p></div>
+
+  <div class="panel"><h2>Sådan gør du</h2><ol>
+   <li><b>Indtast net og transformer.</b> Gå til <a href="#projekt">Net og projekt</a> og skriv nettets kortslutningseffekt, R/X og transformerens data fra opgaven. Opret de tavler, installationen har.</li>
+   <li><b>Indtast alle belastninger.</b> Gå til <a href="#kredse">Kredse</a> og tilføj en kreds for hver belastning i belastningsoversigten. Vælg hvilken tavle den sidder i, typen, effekt eller strøm, antal og samtidighedsfaktor. Kredse, der kun skal tælle med i belastningen, får fjernet fluebenet ved "Dimensionér kablet".</li>
+   <li><b>Opret forsyningskredse.</b> Kablet fra transformeren til hovedtavlen og fra hovedtavlen til hver undertavle har typen "Forsyning til tavle". Deres belastning regnes automatisk ud fra kredsene på tavlen.</li>
+   <li><b>Beskriv kabelføringen.</b> For hver kreds, der skal dimensioneres: vælg installationsmetode (fx E for kabelstige og bakke), omgivelsestemperatur, hvordan kablerne ligger, og hvor mange kredse der ligger samlet. Mål længden på tegningen.</li>
+   <li><b>Vælg værntype og dimensionér.</b> Vælg fx automatsikring, smeltesikring, motorværn eller kredsbryder. Tryk "Dimensionér denne kreds", eller vælg selv tværsnit og værnstørrelse. Dimensionér forsyningskredsene først. Kortslutningsstrømmen ude i grupperne afhænger af kablerne før dem. "Dimensionér alle" gør det i den rigtige rækkefølge.</li>
+   <li><b>Læs kontrollerne.</b> Øverst på kredsen står hver kontrol som OK eller Fejl. Hvis noget fejler, se tabellen herunder.</li>
+   <li><b>Læs og kopiér beregningen.</b> Under kontrollerne står hele beregningen. "Kopiér som tekst" lægger den i udklipsholderen, så den kan sættes ind i Word.</li>
+   <li><b>Brug oversigterne i rapporten.</b> <a href="#enstreg">Enstreg og Ik</a> viser hvor kortslutningsstrømmene er beregnet. <a href="#belastning">Belastning</a> viser summerne pr. tavle. <a href="#selektivitet">Selektivitet</a> sammenligner for- og efterværn.</li>
+   <li><b>Gem.</b> Projektet gemmes automatisk i browseren. Brug <a href="#gem">Gem og hent</a> til at tage en kopi eller flytte projektet til en anden computer.</li>
+  </ol></div>
+
+  <div class="panel"><h2>Hvis en kontrol fejler</h2><div class="tblwrap"><table><thead><tr><th>Kontrol</th><th class="l">Hvad det betyder</th><th class="l">Typisk løsning</th></tr></thead><tbody>
+   <tr><td class="l">Ib ≤ In</td><td class="l" style="white-space:normal">Værnet er mindre end belastningen.</td><td class="l" style="white-space:normal">Vælg et større værn eller en højere indstilling.</td></tr>
+   <tr><td class="l">In ≤ Iz</td><td class="l" style="white-space:normal">Kablet kan ikke føre værnets strøm.</td><td class="l" style="white-space:normal">Større tværsnit, færre kabler samlet eller anden fremføring. Eller et mindre værn, hvis belastningen tillader det.</td></tr>
+   <tr><td class="l">Fejlbeskyttelse</td><td class="l" style="white-space:normal">Fejlstrømmen er for lille til, at værnet afbryder i tide.</td><td class="l" style="white-space:normal">Større tværsnit, kortere kabel, værn med lavere Ia (fx B i stedet for C) eller fejlstrømsafbryder.</td></tr>
+   <tr><td class="l">Brydeevne</td><td class="l" style="white-space:normal">Værnet kan ikke bryde den største kortslutningsstrøm.</td><td class="l" style="white-space:normal">Vælg værn med højere Icu, eller brug kaskade (backup) efter producentens tabel.</td></tr>
+   <tr><td class="l">Leder tåler kortslutning</td><td class="l" style="white-space:normal">Lederen eller PE bliver for varm, før værnet afbryder.</td><td class="l" style="white-space:normal">Større tværsnit (også PE) eller hurtigere værn.</td></tr>
+   <tr><td class="l">Spændingsfald</td><td class="l" style="white-space:normal">Spændingen hos forbrugeren bliver for lav.</td><td class="l" style="white-space:normal">Større tværsnit i gruppen eller i forsyningskredsen før den.</td></tr>
+   <tr><td class="l">Motorstart</td><td class="l" style="white-space:normal">Magnetudløseren kan slå fra, når motoren starter.</td><td class="l" style="white-space:normal">Højere magnetindstilling, D-karakteristik eller motorværn med større indstillingsområde.</td></tr>
+  </tbody></table></div></div>
+
+  <div class="panel"><h2>Ordliste</h2><dl class="gloss">
+   <dt>Ib</dt><dd>Belastningsstrøm. Den strøm kredsen fører i normal drift.</dd>
+   <dt>In / Ir</dt><dd>Værnets mærkestrøm eller indstillede strøm.</dd>
+   <dt>Ii / Im</dt><dd>Strømmen hvor den magnetiske (momentane) udløser slår fra.</dd>
+   <dt>Iz</dt><dd>Kablets strømværdi efter korrektion for temperatur og samlet fremføring.</dd>
+   <dt>Ia</dt><dd>Strømmen der får værnet til at afbryde inden for den krævede udkoblingstid.</dd>
+   <dt>Icu</dt><dd>Værnets brydeevne. Den største strøm det kan afbryde.</dd>
+   <dt>Ik3</dt><dd>Kortslutningsstrøm når alle tre faser kortsluttes.</dd>
+   <dt>Ik2</dt><dd>Kortslutningsstrøm mellem to faser.</dd>
+   <dt>Ik1</dt><dd>Fejlstrøm mellem fase og PE. Bruges til fejlbeskyttelse.</dd>
+   <dt>c</dt><dd>Spændingsfaktor der dækker variation i netspændingen (cmax 1,10 og cmin 0,95).</dd>
+   <dt>ZQ, ZT</dt><dd>Impedans af nettet og af transformeren.</dd>
+   <dt>kt, kg, ks</dt><dd>Korrektionsfaktorer for temperatur, samlet fremføring og jordens termiske modstand.</dd>
+   <dt>k</dt><dd>Materialekonstant for hvor meget kortslutningsvarme lederen tåler (115 for PVC/Cu).</dd>
+   <dt>Δu</dt><dd>Spændingsfald i procent af nominel spænding.</dd>
+   <dt>Samtidighed</dt><dd>Den del af belastningerne, der forventes at være i drift på samme tid.</dd>
+  </dl></div>
+
+  <div class="warnbox"><b>Kontrollér tallene.</b> Tabellerne under <a href="#kilder">Kilder</a> er ikke sammenholdt med jeres udgave af standarden, og gG-sikringernes Ia er vejledende. Sammenlign med jeres egne tabeller og producentdata, før besvarelsen afleveres.</div>
+  </div>`;
+}
+
+/* ---------- Net og projekt ---------- */
+function vProjekt(m){
+  const S=P.settings;
+  m.innerHTML=`<div class="cols">
+   <div class="panel stack">
+    <div><h2>Projekt</h2><p class="help">Start her. Indtast net- og transformerdata fra opgaven. Beregningsforudsætningerne er sat til almindelige værdier. Ret dem, hvis jeres underviser bruger andre.</p>${fld("Navn",inp("p","name",P.name,{type:"text"}))}</div>
+    <div class="sec"><h3>Net (oplyst af netselskab)</h3>
+      ${chk("p","net.stiff",!!P.net.stiff,"Stift net (S″kQ = ∞, ZQ = 0)")}
+      <p class="help">Vælg stift net, hvis nettets kortslutningseffekt ikke er oplyst, eller hvis opgaven siger, at nettet skal regnes stift. Så begrænses kortslutningsstrømmen kun af transformer og kabler. Det giver de største strømme ved transformeren og en lille fejl på den sikre side for brydeevne.</p>
+      ${P.net.stiff?"":`<div class="fg">
+      ${fld("S″kQ (kortslutningseffekt)",inp("p","net.Sk",P.net.Sk,{unit:"MVA"}))}
+      ${fld("R/X",inp("p","net.rx",P.net.rx))}</div>`}</div>
+    <div class="sec"><h3>Transformer</h3><div class="fg">
+      ${fld("SrT",inp("p","trafo.S",P.trafo.S,{unit:"kVA"}))}
+      ${fld("uk (ek)",inp("p","trafo.ek",P.trafo.ek,{unit:"%"}))}
+      ${fld("Pk (kobbertab)",inp("p","trafo.Pk",P.trafo.Pk,{unit:"W"}))}
+      ${fld("UrT lavspænding",inp("p","trafo.Ur",P.trafo.Ur,{unit:"V"}))}</div>
+      <p class="note" style="margin-top:8px">Jordingssystem TN-C-S. Koblingsciffer Dyn5.</p></div>
+    <div class="sec"><h3>Beregningsforudsætninger</h3><div class="fg">
+      ${fld("Un",inp("p","settings.Un",S.Un,{unit:"V"}))}
+      ${fld("U0",inp("p","settings.U0",S.U0,{unit:"V"}))}
+      ${fld("cmax",inp("p","settings.cmax",S.cmax))}
+      ${fld("cmin",inp("p","settings.cmin",S.cmin))}
+      ${fld("Ledertemp. ved Ik,min",sel_("p","settings.thetaMin",S.thetaMin,[["drift","Driftstemp. (70/90 °C)"],["20","20 °C"],["80","80 °C"],["160","160 °C (PVC slut)"],["250","250 °C (PEX slut)"]]))}
+      ${fld("ΔU belysning",inp("p","settings.duLight",S.duLight,{unit:"%"}))}
+      ${fld("ΔU øvrige",inp("p","settings.duOther",S.duOther,{unit:"%"}))}
+      ${fld("Mål for Δu pr. forsyningskreds (auto)",inp("p","settings.duFeed",S.duFeed??1,{unit:"%"}))}
+      ${fld("Iinrush / Istart",inp("p","settings.inrush",S.inrush))}
+      ${fld("Startkontrol mod",sel_("p","settings.startCmp",S.startCmp,[["nom","Indstillet Im"],["tol","Im − 20 %"]]),"w2")}
+    </div>${chk("p","settings.useKT",S.useKT,"Brug korrektionsfaktor KT for transformer (DS/EN 60909-0, 6.3.3)")}
+    <p class="help" style="margin-top:8px">cmax og cmin er spændingsfaktorer fra DS/EN 60909-0 tabel 1. Ledertemperaturen ved Ik,min gør modstanden større og strømmen mindre. Højere temperatur er på den sikre side. Målet for spændingsfald pr. forsyningskreds bruges kun af den automatiske dimensionering, så der er plads til spændingsfald i grupperne bagefter.</p></div>
+    <div class="sec"><h3>Tavler</h3><div class="stack" id="boards">${P.boards.map((b,i)=>`<div class="fg"><div class="field"><span class="flabel">Kode</span><input data-scope="p" data-k="boards.${i}.id" type="text" value="${esc(b.id)}" disabled></div>${fld("Navn",inp("p",`boards.${i}.name`,b.name,{type:"text"}))}</div>`).join("")}</div>
+      <div class="btns" style="margin-top:10px"><button class="btn" id="addBoard">Tilføj tavle</button></div></div>
+   </div>
+   <div class="panel" id="srcres"></div></div>`;
+  $("#addBoard").onclick=()=>{let n=P.boards.length+1;while(P.boards.some(b=>b.id==="U"+n))n++;P.boards.push({id:"U"+n,name:"Undertavle -U"+n});save();render()};
+  renderSource();
+}
+function renderSource(){
+  const el=$("#srcres");if(!el)return;const E=makeEngine(P),s=E.src,b=E.busOf("T"),S=P.settings;
+  const L=[...(P.net.stiff?[{f:"Stift net: S″kQ → ∞",r:"ZQ = 0 mΩ"},{t:"Nettet foran transformeren regnes uden impedans. Kun transformer og kabler begrænser kortslutningsstrømmen."}]:[
+   {f:"ZQ = cmax · Un² / S″kQ",s:`= ${fmt(S.cmax,2)} · ${S.Un}² V² / ${fmt(P.net.Sk,0)} MVA`,r:`ZQ = ${fmt(s.ZQ,3)} mΩ`},
+   {f:"XQ = ZQ / √(1 + (R/X)²)",s:`= ${fmt(s.ZQ,3)} / √(1 + ${fmt(P.net.rx,2)}²)`,r:`XQ = ${fmt(s.XQ,3)} mΩ`},
+   {f:"RQ = (R/X) · XQ",s:`= ${fmt(P.net.rx,2)} · ${fmt(s.XQ,3)}`,r:`RQ = ${fmt(s.RQ,3)} mΩ`}]),
+   {f:"ZT = uk · UrT² / SrT",s:`= ${fmt(P.trafo.ek/100,3)} · ${P.trafo.Ur}² / ${fmt(P.trafo.S*1000,0)}`,r:`ZT = ${fmt(s.ZT,3)} mΩ`},
+   {f:"RT = Pk · UrT² / SrT²",s:`= ${fmt(P.trafo.Pk,0)} · ${P.trafo.Ur}² / ${fmt(P.trafo.S*1000,0)}²`,r:`RT = ${fmt(s.RT,3)} mΩ`},
+   {f:"XT = √(ZT² − RT²)",s:`= √(${fmt(s.ZT,3)}² − ${fmt(s.RT,3)}²)`,r:`XT = ${fmt(s.XT,3)} mΩ`}];
+  if(S.useKT)L.push({f:"KT = 0,95 · cmax / (1 + 0,6 · xT)",s:`xT = ${fmt(s.xT,4)}`,r:`KT = ${fmt(s.KT,4)}`});
+  L.push({f:"Z1 = ZQ + ZT",r:`Z1 = ${fZ(s.Z1)} mΩ,  |Z1| = ${fmt(cabs(s.Z1),3)} mΩ`});
+  L.push({f:"Ik3,max = cmax · Un / (√3 · |Z1|)",s:`= ${fmt(S.cmax,2)} · ${S.Un} / (√3 · ${fmt(cabs(s.Z1),3)} mΩ)`,r:`Ik3,max = ${fA(b.ik3max)}`});
+  L.push({f:"Ik1,max = cmax · Un/√3 / |⅔ · ZQ + ZT|",r:`Ik1,max = ${fA(b.ik1max)}`});
+  L.push({f:"InT = SrT / (√3 · Un)",r:`InT = ${fmt(s.InT,0)} A`});
+  el.innerHTML=`<h2>Transformerens klemmer</h2><p class="note">Kildeimpedans og kortslutningsstrømme ved lavspændingsklemmerne. Disse værdier er udgangspunkt for alle kredse.</p>
+   ${chainHtml([["Net Q",s.zQ],["Trafo T",s.zT]],"Klemmer")}
+   ${stepHtml({h:"Net og transformer",L,src:[cite("iec60909","ligning (1) og (5), tabel 1; (7)–(9) transformer; (29) Ik3"),cite("opg","net- og transformerdata")]},0)}
+   <div class="kv">${[["Ik3,max",b.ik3max],["Ik3,min",b.ik3min],["Ik2,min",b.ik2min],["Ik1,max",b.ik1max],["Ik1,min",b.ik1min]].map(([k,v])=>`<div><span class="lbl">${k}</span><b>${fA(v)}</b></div>`).join("")}</div>`;
+}
+
+/* ---------- Kredse ---------- */
+function vKredse(m){
+  if(!P.circuits.some(c=>c.id===sel))sel=(P.circuits.find(c=>c.dim)||P.circuits[0])?.id;
+  m.innerHTML=`<div class="kgrid"><aside class="panel klist" id="klist"></aside><div class="stack" id="kmain"></div></div>`;
+  renderList();renderEditor();
+}
+function renderList(){
+  const el=$("#klist");if(!el)return;const E=makeEngine(P);
+  const groups=["T",...P.boards.map(b=>b.id)];
+  el.innerHTML=`<div class="btns"><button class="btn primary" id="addC">Ny kreds</button><button class="btn" id="autoAllB">Dimensionér alle</button></div><p class="note">Kredse med grå tekst er kun belastning. Ny her? Læs <a href="#vejledning">Vejledning</a>.</p>`+
+   groups.map(g=>{const cs=P.circuits.filter(c=>c.from===g);if(!cs.length)return"";
+     return `<div class="kgroup"><span class="lbl">Fra ${esc(g==="T"?"transformer":g)}</span>${cs.map(c=>{let pill;
+       if(!c.dim)pill=`<span class="pill mut">last</span>`;else{const r=E.evalC(c);const nb=r.checks.filter(x=>!x.ok).length;pill=nb?`<span class="pill bad">${nb} fejl</span>`:`<span class="pill ok">OK</span>`}
+       return `<button class="kitem ${c.dim?"":"load"}" data-id="${c.id}" aria-current="${c.id===sel}"><span>${esc(c.name)}${+c.n>1?` <span class="note">×${c.n}</span>`:""}</span>${pill}</button>`}).join("")}</div>`}).join("");
+  el.querySelectorAll(".kitem").forEach(b=>b.onclick=()=>{sel=b.dataset.id;renderList();renderEditor();if(innerWidth<900)$("#kmain").scrollIntoView({behavior:"smooth"})});
+  $("#addC").onclick=()=>{const first=!P.circuits.length&&P.boards.length;const c=first?C({name:"Stikledning, transformer → "+P.boards[0].id,from:"T",kind:"board",toBoard:P.boards[0].id,cable:{mat:"Al",ins:"XLPE",size:95,L:50,method:"D2",temp:15,soil:1,group:"jord",gn:1},prot:{type:"gG",Icu:120}}):C({name:"Ny kreds",from:P.boards[0]?.id||"T"});P.circuits.push(c);sel=c.id;autoProt(P,c);autoSize(P,c);save();renderList();renderEditor()};
+  $("#autoAllB").onclick=()=>{autoAll(P);save();renderList();renderEditor();toast("Alle kredse er dimensioneret")};
+}
+function renderEditor(){
+  const el=$("#kmain");if(!el)return;const c=P.circuits.find(x=>x.id===sel);
+  if(!c){el.innerHTML=P.circuits.length?`<div class="panel"><p class="note">Vælg en kreds i listen, eller tilføj en ny.</p></div>`:`<div class="panel guide"><h2>Projektet er tomt</h2><ol>
+    <li><b>Net og transformer.</b> Indtast data fra opgaven under <a href="#projekt">Net og projekt</a>. Feltværdierne er eksemplets tal, indtil du retter dem. Opret også de tavler, installationen har.</li>
+    <li><b>Stikledningen.</b> Tryk "Ny kreds". Den første kreds oprettes som forsyning fra transformeren til hovedtavlen -U1.</li>
+    <li><b>Resten.</b> Tilføj forsyninger til undertavler og alle grupper og belastninger. Se <a href="#vejledning">Vejledning</a>.</li></ol></div>`;return}
+  const L=c.load,cb=c.cable,p=c.prot,isM=c.kind==="motor",isB=c.kind==="board";
+  const froms=[["T","Transformer"],...P.boards.map(b=>[b.id,b.name])];
+  const sizes=SZ.filter(s=>R20[cb.mat][sizeIdx(s)]!=null).map(s=>[s,fS(s)+" mm²"]);
+  const ground=cb.method==="D1"||cb.method==="D2";
+  const temps=ground?[10,15,20,25,30,35,40]:[10,15,20,25,30,32,35,37,40,45,50,55,60];
+  if(!temps.includes(+cb.temp))temps.push(+cb.temp),temps.sort((a,b)=>a-b);
+  el.innerHTML=`
+  <div class="panel" id="kres"></div>
+  <div class="panel">
+    <div class="hero" style="margin-bottom:4px"><h2 style="margin:0">Kredsdata</h2>
+      <div class="btns"><button class="btn primary" id="autoC">Dimensionér denne kreds</button><button class="btn" id="dupC">Kopiér</button><button class="btn danger" id="delC">Slet</button></div></div>
+    <p class="help">Angiv hvor kredsen kommer fra, og hvad den forsyner. "Antal" og "samtidighedsfaktor" bruges kun, når belastningen lægges sammen på tavlen. Ændringer regnes igennem med det samme. "Dimensionér denne kreds" vælger værn og det mindste kabel, der opfylder alle krav.</p>
+    <div class="fg">
+      ${fld("Navn",inp("c","name",c.name,{type:"text"}),"w2")}
+      ${fld("Fra tavle",sel_("c","from",c.from,froms))}
+      ${fld("Type",sel_("c","kind",c.kind,Object.entries(KINDS)))}
+      ${isB?fld("Til tavle",sel_("c","toBoard",c.toBoard,P.boards.filter(b=>b.id!==c.from).map(b=>[b.id,b.name]))):""}
+      ${fld("Antal ens kredse",inp("c","n",c.n,{step:1}))}
+      ${fld("Samtidighedsfaktor",inp("c","factor",c.factor,{step:.05}))}
+    </div>
+    ${chk("c","dim",c.dim,"Dimensionér kablet (fjern fluebenet for kun at medregne belastningen)")}
+    ${fld("Bemærkning",inp("c","note",c.note,{type:"text"}))}
+    ${isB?`<p class="help">Det er en forsyningskreds, så belastningen regnes automatisk som summen af alle kredse på ${esc(boardName(c.toBoard))}. Se fanen Belastning.</p>`:`<div class="sec"><h3>Belastning</h3><p class="help">${isM?"Vælg motorens effekt. Mærkestrøm, cos φ og startstrøm hentes fra bilag 1. Starttid udfyldes kun ved tungstart.":"Angiv effekt, tilsyneladende effekt eller strøm for én kreds. For stikkontakter bruges typisk stikkontaktens mærkestrøm."}</p><div class="fg">
+      ${isM?fld("Motor (bilag 1)",sel_("c","load.motorKw",L.motorKw,MOTORS.map(m=>[m.kw,`${fS(m.kw)} kW · ${fmt(m.In,1)} A`]),true))+fld("Starttid (tungstart)",inp("c","load.startTime",L.startTime,{unit:"s"}))
+      :fld("Angiv som",sel_("c","load.type",L.type,[["P","Effekt P (kW)"],["S","Tilsyneladende S (kVA)"],["I","Strøm I (A)"]]))+fld(L.type==="I"?"Strøm":L.type==="S"?"S":"P",inp("c","load.val",L.val,{unit:L.type==="I"?"A":L.type==="S"?"kVA":"kW"}))+fld("cos φ",inp("c","load.cos",L.cos,{step:.01}))+fld("Faser",sel_("c","load.phases",L.phases,[[3,"3-faset 400 V"],[1,"1-faset 230 V"]],true))}
+      </div>${isM?"":chk("c","load.cap",L.cap,"Kapacitiv last (fx belysning med cos φ 0,92 kapacitiv)")}</div>`}
+    ${c.dim?`<div class="sec"><h3>Kabel</h3><p class="help">Beskriv kablet og hvordan det er fremført. Installationsmetode, temperatur og antal kredse samlet bestemmer, hvor meget strøm kablet må føre. Mål længden på tegningerne. Antal kredse samlet tæller alle kabler, der ligger tæt sammen på samme stige eller bakke.</p><div class="fg">
+      ${fld("Leder",sel_("c","cable.mat",cb.mat,[["Cu","Kobber"],["Al","Aluminium"]]))}
+      ${fld("Isolering",sel_("c","cable.ins",cb.ins,[["PVC","PVC (70 °C)"],["XLPE","PEX (90 °C)"]]))}
+      ${fld("Tværsnit",sel_("c","cable.size",cb.size,sizes,true))}
+      ${fld("PE/PEN-tværsnit",sel_("c","cable.pe",cb.pe,[["same","Samme som fase"],...sizes],true))}
+      ${fld("Parallelle kabler",inp("c","cable.par",cb.par,{step:1}))}
+      ${fld("Længde",inp("c","cable.L",cb.L,{unit:"m"}))}
+      ${fld("Reaktans X′",inp("c","cable.x",cb.x,{unit:"Ω/km",step:.01}))}
+      ${fld("Installationsmetode",sel_("c","cable.method",cb.method,Object.entries(METHODS)),"w2")}
+      ${fld(ground?"Jordtemperatur":"Omgivelsestemperatur",sel_("c","cable.temp",cb.temp,temps.map(t=>[t,t+" °C"]),true))}
+      ${ground?fld("Jordens termiske modstand",inp("c","cable.soil",cb.soil,{unit:"K·m/W",step:.1})):""}
+      ${fld("Fremføring",sel_("c","cable.group",cb.group,Object.entries(GROUPS).filter(([k])=>ground?k.startsWith("jord"):!k.startsWith("jord")).map(([k,g])=>[k,g.t])),"w2")}
+      ${fld("Antal kredse samlet",inp("c","cable.gn",cb.gn,{step:1}))}
+      </div></div>
+    <div class="sec"><h3>Beskyttelse</h3><p class="help">Vælg værntype og størrelse. Brydeevnen Icu står i producentens datablad. Udkoblingstiden vælges automatisk efter DS/HD 60364-4-41 (0,4 s for de fleste grupper, 5 s for forsyningskredse og grupper over 32 A). Har du aflæst Ia på en kurve, skriv den i "Ia manuelt".</p><div class="fg">
+      ${fld("Værn",sel_("c","prot.type",p.type,Object.entries(PROT_T)),"w2")}
+      ${p.type==="MCCB"?fld("In (ramme)",inp("c","prot.In",p.In,{unit:"A"}))+fld("Ir (termisk)",inp("c","prot.Ir",p.Ir,{unit:"A"}))+fld("Ii (momentan)",inp("c","prot.Im",p.Im,{unit:"A"}))
+       :p.type==="MMS"?fld("Ir (indstilling)",inp("c","prot.Ir",p.Ir,{unit:"A"}))+fld("Im (magnet)",inp("c","prot.Im",p.Im,{unit:"A"}))
+       :p.type==="gG+TR"?fld("Sikring gG",sel_("c","prot.In",p.In,Object.keys(GG).map(k=>[k,k+" A"]),true))+fld("Termorelæ Ir",inp("c","prot.Ir",p.Ir,{unit:"A"}))
+       :p.type==="gG"?fld("Sikring In",sel_("c","prot.In",p.In,Object.keys(GG).map(k=>[k,k+" A"]),true))
+       :fld("In",sel_("c","prot.In",p.In,MCB_IN.map(k=>[k,k+" A"]),true))}
+      ${fld("Brydeevne Icu",inp("c","prot.Icu",p.Icu,{unit:"kA"}))}
+      ${fld("Ia manuelt (0 = beregnet)",inp("c","prot.IaOv",p.IaOv,{unit:"A"}))}
+      ${fld("Udkoblingstid",sel_("c","prot.t",p.t,[["auto","Automatisk"],["0.4","0,4 s"],["5","5 s"]]))}
+    </div></div>`:""}
+  </div>
+  ${c.dim?`<div class="panel" id="kdoc"></div>`:""}`;
+  $("#autoC").onclick=()=>{autoProt(P,c);const ok=c.dim?autoSize(P,c):true;save();renderList();renderEditor();toast(ok?"Kredsen er dimensioneret":"Intet tværsnit opfylder alle krav")};
+  $("#dupC").onclick=()=>{const d=deep(c);d.id=nid();d.name+=" (kopi)";P.circuits.splice(P.circuits.indexOf(c)+1,0,d);sel=d.id;save();renderList();renderEditor()};
+  $("#delC").onclick=()=>{const b=$("#delC");if(b.dataset.sure){P.circuits=P.circuits.filter(x=>x!==c);sel=null;save();render()}else{b.dataset.sure=1;b.textContent="Klik igen for at slette"}};
+  renderResult();
+}
+function cableName(c){const cb=c.cable,ph=phasesOf(c),cores=c.from==="T"&&c.kind==="board"?"4×":ph===3?"5G":"3G";
+  const pe=cb.pe!=="same"&&+cb.pe!==+cb.size?`+${fS(+cb.pe)}`:"";const one=`${cores}${fS(+cb.size)}${pe} ${cb.mat} ${cb.ins==="XLPE"?"PEX":"PVC"}`;return (+cb.par>1?cb.par+"×(":"")+one+(+cb.par>1?")":"")}
+function protName(c){const p=c.prot;return p.type.startsWith("MCB")?p.type.slice(4)+p.In:p.type==="gG"?`gG ${p.In} A`:p.type==="gG+TR"?`gG ${p.In} A + TR ${fmt(+p.Ir,1)} A`:p.type==="MMS"?`MMS ${fmt(+p.Ir,1)} A`:`MCCB ${p.In} A, Ir ${fmt(+p.Ir,0)} A`}
+function renderResult(){
+  const el=$("#kres");if(!el)return;const c=P.circuits.find(x=>x.id===sel);if(!c)return;
+  const E=makeEngine(P),r=E.evalC(c);
+  if(!c.dim){el.innerHTML=`<div class="lbl">Kun belastning</div><div class="big">${fmt(r.lo.Ib,1)} A <small>pr. kreds · ${fmt(r.lo.P/1000,2)} kW · cos φ ${fmt(r.lo.cos,2)}</small></div>
+    <p class="note" style="margin-top:8px">Bidrag til ${esc(boardName(c.from))}: ${c.n} × ${fmt(+c.factor,2)} × ${fmt(Math.hypot(r.lo.P,r.lo.Q)/1000,2)} kVA = ${fmt(c.n*c.factor*Math.hypot(r.lo.P,r.lo.Q)/1000,2)} kVA. Sæt flueben i "Dimensionér kablet" for at regne kabel og værn.</p>`;return}
+  el.innerHTML=`<div class="hero"><div><div class="lbl">${esc(boardName(c.from))} → ${esc(c.kind==="board"?boardName(c.toBoard):c.name)}</div>
+     <div class="big">${cableName(c)} <small>· ${fS(c.cable.L)} m · ${protName(c)}</small></div></div>
+     <div>${r.ok?`<span class="pill ok">Alle krav opfyldt</span>`:`<span class="pill bad">${r.checks.filter(x=>!x.ok).length} krav ikke opfyldt</span>`}</div></div>
+   ${c.note?`<p class="note" style="margin-top:6px">${esc(c.note)}</p>`:""}
+   <div class="kv" style="margin-top:12px">${[["Ib",fA(r.lo.Ib)],["Iz",fA(r.iz.iz)],["Δu samlet",fmt(r.duTot,2)+" %"],["Ik3,max start",fA(r.start.ik3max)],["Ik1,min slut",fA(r.end.ik1min)],["Ia",fA(r.pr.Ia)]].map(([k,v])=>`<div><span class="lbl">${k}</span><b>${v}</b></div>`).join("")}</div>
+   <ul class="checks" style="margin-top:12px">${r.checks.map(x=>`<li><span class="pill ${x.ok?"ok":"bad"}">${x.ok?"OK":"Fejl"}</span><span>${x.k}</span><span class="v">${esc(x.v)}</span></li>`).join("")}</ul>`;
+  const d=$("#kdoc");if(d){const steps=docSteps(P,r);
+    d.innerHTML=`<div class="hero"><h2 style="margin:0">Beregning</h2><button class="btn" id="cpy">Kopiér som tekst</button></div>
+     <p class="note">Alle mellemregninger med formel, indsatte værdier og kilde. Impedanser i mΩ.</p>
+     <h3 style="margin-top:12px">Ækvivalentdiagram (maks.-værdier, fase)</h3>
+     ${chainHtml([["Net Q",r.src.zQ],["Trafo T",r.src.zT],...r.elems.map(e=>[e.c.name,e.a.L]),[c.name,r.za.L]],"Fejl")}
+     ${steps.map((s,i)=>stepHtml(s,i+1,s.imp?impTable(r):"")).join("")}`;
+    $("#cpy").onclick=()=>copy(stepsText(P,r,steps))}
+}
+function impTable(r){
+  const rows=[["Net ZQ",r.src.zQ,r.src.zQ,null],["Transformer ZT",r.src.zT,r.src.zT,null],...r.elems.map(e=>[`${e.c.name} (${cableName(e.c)}, ${fS(e.c.cable.L)} m)`,e.a.L,e.b.L,e.b.PE]),[`${r.c.name} (${cableName(r.c)}, ${fS(r.c.cable.L)} m)`,r.za.L,r.zb.L,r.zb.PE]];
+  return `<div class="tblwrap"><table><thead><tr><th>Element</th><th>R 20 °C</th><th>R θ</th><th>X</th><th>R PE θ</th></tr></thead><tbody>${rows.map(([n,a,b,pe])=>`<tr><td class="l">${esc(n)}</td><td>${fmt(a.r,3)}</td><td>${fmt(b.r,3)}</td><td>${fmt(a.x,3)}</td><td>${pe?fmt(pe.r,3):"–"}</td></tr>`).join("")}</tbody></table></div>`;
+}
+function stepHtml(s,no,extra=""){const why=s.why||WHY[s.h];
+  return `<div class="step"><h4>${no?`<span class="no">${String(no).padStart(2,"0")}</span>`:""}${esc(s.h)}</h4>${why?`<p class="why">${esc(why)}</p>`:""}
+   <div class="eq">${s.L.map(l=>(l.t?`<div class="t">${esc(l.t)}</div>`:"")+(l.f?`<div class="f">${esc(l.f)}</div>`:"")+(l.s?`<div class="s">${esc(l.s)}</div>`:"")+(l.r?`<div class="r">${esc(l.r)}</div>`:"")).join("")}</div>
+   ${extra}<div class="src">Kilde: ${s.src.map(x=>`<span><b>${esc(SRC[x.k].split(" – ")[0])}</b>${x.extra?", "+esc(x.extra):""}</span>`).join(" · ")}</div></div>`;
+}
+function chainHtml(items,end){
+  return `<div class="chain"><div class="srcv">c·U</div>${items.map(([n,z])=>`<div class="w"></div><div class="z"><b>${esc(n.length>22?n.slice(0,21)+"…":n)}</b>${fmt(z.r,2)} + j${fmt(z.x,2)}</div>`).join("")}<div class="w"></div><span class="flt">✕ ${esc(end)}</span></div>`;
+}
+function copy(t){const done=()=>toast("Kopieret");try{navigator.clipboard.writeText(t).then(done,()=>fallback(t))}catch(e){fallback(t)}}
+function fallback(t){const ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand("copy");toast("Kopieret")}catch(e){toast("Markér teksten og kopiér manuelt")}ta.remove()}
+
+/* ---------- Belastning ---------- */
+function vBelastning(m){
+  const E=makeEngine(P);
+  m.innerHTML=`<div class="stack"><div class="panel"><h2>Belastning pr. tavle</h2><p class="help">Her lægges belastningerne sammen for hver tavle. Hver kreds bidrager med sin effekt ganget med antal og samtidighedsfaktor. P og Q lægges sammen hver for sig, og den samlede strøm findes ud fra S. Resultatet er Ib for tavlens forsyningskreds.</p></div>${P.boards.map(b=>{const s=E.boardSum(b.id);
+   return `<div class="panel"><div class="hero"><h2 style="margin:0">${esc(b.name)}</h2><span class="note">I alt ${fmt(s.S/1000,1)} kVA · ${fmt(s.I,1)} A · cos φ ${fmt(s.cos,3)}</span></div>
+   <div class="tblwrap" style="margin-top:8px"><table><thead><tr><th>Kreds</th><th>Antal</th><th>Ib pr. stk</th><th>P pr. stk<br>kW</th><th>Q pr. stk<br>kvar</th><th>Faktor</th><th>P bidrag<br>kW</th><th>Q bidrag<br>kvar</th></tr></thead><tbody>
+   ${s.rows.map(x=>`<tr><td class="l">${esc(x.c.name)}</td><td>${x.c.n}</td><td>${fmt(x.lo.Ib,1)}</td><td>${fmt(x.lo.P/1000,2)}</td><td>${fmt(x.lo.Q/1000,2)}</td><td>${fmt(+x.c.factor,2)}</td><td>${fmt(x.P/1000,2)}</td><td>${fmt(x.Q/1000,2)}</td></tr>`).join("")}
+   <tr class="tot"><td class="l">Sum</td><td></td><td></td><td></td><td></td><td></td><td>${fmt(s.P/1000,2)}</td><td>${fmt(s.Q/1000,2)}</td></tr></tbody></table></div>
+   <div class="eq" style="margin-top:10px"><div class="f">S = √(ΣP² + ΣQ²) = √(${fmt(s.P/1000,2)}² + ${fmt(s.Q/1000,2)}²)</div><div class="r">S = ${fmt(s.S/1000,2)} kVA,  I = S / (√3 · ${P.settings.Un} V) = ${fmt(s.I,1)} A</div></div>
+   <p class="src">Kilde: <b>Opgaveoplæg</b>, belastningsoversigt og samtidighedsfaktorer. Motorer: <b>bilag 1</b> (P = √3 · U · In · cos φ). 1-fasede laster regnes som jævnt fordelt på faserne.</p></div>`}).join("")}</div>`;
+}
+
+/* ---------- Enstreg ---------- */
+function vEnstreg(m){
+  const E=makeEngine(P);
+  const kids=b=>P.circuits.filter(c=>c.from===b&&c.dim);
+  const W=210,H=220,ROW0=80;
+  const leaves=b=>{const k=kids(b);if(!k.length)return 1;return k.reduce((s,c)=>s+(c.kind==="board"?leaves(c.toBoard):1),0)};
+  let svg="",maxD=0;
+  function place(b,x0,d,y){ // bus for board b at y
+    const k=kids(b),w=leaves(b)*W;maxD=Math.max(maxD,d);
+    const bus=E.busOf(b);
+    if(b==="T"){const tx=x0+W/2;svg+=`<circle cx="${tx}" cy="${y-30}" r="13" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="${tx}" cy="${y-14}" r="13" fill="none" stroke="currentColor" stroke-width="1.5"/>
+       <text x="${tx+22}" y="${y-34}" font-size="12" font-weight="600">Transformer ${fmt(P.trafo.S,0)} kVA, bygning 6</text><text x="${tx+22}" y="${y-20}" font-size="11" class="mono">Ik3,max ${fA(bus.ik3max)} · Ik1,max ${fA(bus.ik1max)}</text>`;}
+    else{const xs=k.length?[x0+W/2,x0+w-W/2]:[x0+W/2-30,x0+W/2+30];
+      svg+=`<line x1="${xs[0]-20}" y1="${y}" x2="${xs[1]+20}" y2="${y}" stroke="currentColor" stroke-width="4"/>
+       <text x="${xs[0]+8}" y="${y-36}" font-size="13" font-weight="600">${esc(boardName(b))}</text>
+       <text x="${xs[0]+8}" y="${y-21}" font-size="11" class="mono">${bus?`Ik3,max ${fA(bus.ik3max)}`:"ingen forsyning regnet"}</text>
+       <text x="${xs[0]+8}" y="${y-8}" font-size="11" class="mono">${bus?`Ik1,min ${fA(bus.ik1min)}`:""}</text>`}
+    let x=x0;
+    for(const c of k){const lw=(c.kind==="board"?leaves(c.toBoard):1)*W,cx=x+W/2,r=E.evalC(c);
+      const y2=c.kind==="board"?y+H:y+120;const col=r.ok?"var(--ok)":"var(--bad)";
+      svg+=`<line x1="${cx}" y1="${y}" x2="${cx}" y2="${y2}" stroke="currentColor" stroke-width="1.5"/>
+       <rect x="${cx-7}" y="${y+14}" width="14" height="24" fill="var(--panel)" stroke="currentColor" stroke-width="1.5"/>
+       <text x="${cx+12}" y="${y+24}" font-size="11" class="mono">${esc(protName(c))}</text>
+       <text x="${cx+12}" y="${y+56}" font-size="11.5" font-weight="600">${esc(c.name.length>24?c.name.slice(0,23)+"…":c.name)}</text>
+       <text x="${cx+12}" y="${y+70}" font-size="11" class="mono">${esc(cableName(c))}</text>
+       <text x="${cx+12}" y="${y+84}" font-size="11" class="mono">${fS(c.cable.L)} m · Ib ${fA(r.lo.Ib)}</text>
+       <circle cx="${cx+12+3}" cy="${y+96}" r="4" fill="${col}"/><text x="${cx+24}" y="${y+100}" font-size="11">${r.ok?"OK":r.checks.filter(x=>!x.ok).length+" fejl"} · Δu ${fmt(r.duTot,1)} %</text>`;
+      if(c.kind==="board")place(c.toBoard,x,d+1,y2);
+      else svg+=`<path d="M${cx-6},${y2-8} L${cx},${y2} L${cx+6},${y2-8}" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <text x="${cx+12}" y="${y2-2}" font-size="11" class="mono">Ik1,min ${fA(r.end.ik1min)}</text>`;
+      x+=lw}
+  }
+  const totalW=leaves("T")*W+40;place("T",20,0,ROW0);
+  const Ht=ROW0+(maxD+1)*H+60;
+  const E2=E;const rows=[["Transformerens klemmer",E2.busOf("T")],...P.circuits.filter(c=>c.dim).map(c=>[c.kind==="board"?boardName(c.toBoard)+" (skinne)":c.name+" (slut)",E2.evalC(c).end])];
+  m.innerHTML=`<div class="stack"><div class="panel"><h2>Enstregsdiagram</h2><p class="note">Viser de kredse, der dimensioneres. Kortslutningsstrømme er angivet på tavleskinner og i enden af hver gruppe. Rød prik betyder, at et krav ikke er opfyldt.</p>
+   <div class="sld" style="margin-top:10px"><svg width="${totalW}" height="${Ht}" viewBox="0 0 ${totalW} ${Ht}" style="color:var(--fg)">${svg}</svg></div></div>
+   <div class="panel"><h2>Kortslutningsstrømme</h2><div class="tblwrap"><table><thead><tr><th>Sted</th><th>Ik3,max</th><th>Ik3,min</th><th>Ik2,min</th><th>Ik1,max</th><th>Ik1,min</th><th>|Z1,max| mΩ</th><th>|ZS,min| mΩ</th></tr></thead><tbody>
+   ${rows.map(([n,k])=>`<tr><td class="l">${esc(n)}</td><td>${fA(k.ik3max)}</td><td>${fA(k.ik3min)}</td><td>${fA(k.ik2min)}</td><td>${fA(k.ik1max)}</td><td>${fA(k.ik1min)}</td><td>${fmt(cabs(k.Z1max),2)}</td><td>${fmt(cabs(k.Zlmin),2)}</td></tr>`).join("")}</tbody></table></div>
+   <p class="src">Kilde: <b>DS/EN 60909-0</b>. cmax = ${fmt(P.settings.cmax,2)}, cmin = ${fmt(P.settings.cmin,2)}. Maks. ved 20 °C, min. ved ${P.settings.thetaMin==="drift"?"driftstemperatur":P.settings.thetaMin+" °C"}.</p></div></div>`;
+}
+
+/* ---------- Selektivitet ---------- */
+function vSelekt(m){
+  const E=makeEngine(P);const blocks=[];
+  for(const b of P.boards){const feed=E.supplyOf(b.id);if(!feed||!feed.dim)continue;
+    const outs=P.circuits.filter(c=>c.from===b.id&&c.dim);if(!outs.length)continue;
+    const bus=E.busOf(b.id);
+    const rows=outs.map(o=>{const up=feed.prot,dn=o.prot;let st,txt;
+      const upIn=up.type==="MCCB"||up.type==="MMS"?+up.Ir:+up.In,dnIn=dn.type==="MCCB"||dn.type==="MMS"?+dn.Ir:+dn.In;
+      if(up.type.startsWith("gG")&&dn.type.startsWith("gG")){const ra=upIn/(+dn.In);st=ra>=1.6?"ok":"bad";txt=`gG/gG: forhold ${fmt(ra,2)} (krav ≥ 1,6)`}
+      else if(up.type==="MCCB"&&bus){const lo=0.8*up.Im;st=lo>bus.ik3max?"ok":"warn";txt=st==="ok"?`Total selektivitet: 0,8 · Ii = ${fA(lo)} > Ik3,max ${fA(bus.ik3max)}`:`Delvis: 0,8 · Ii = ${fA(lo)} < Ik3,max ${fA(bus.ik3max)}. Brug producentens selektivitetstabel.`}
+      else {st="warn";txt=`Forhold In ${fmt(upIn/dnIn,2)}. Kontrollér tid/strøm-kurver eller producentens selektivitetstabel ved Ik3,max ${bus?fA(bus.ik3max):"–"}.`}
+      return {o,st,txt}});
+    blocks.push(`<div class="panel"><h2>${esc(b.name)}</h2><p class="note">For-værn: ${esc(feed.name)} – ${esc(protName(feed))}</p>
+      <div class="tblwrap" style="margin-top:8px"><table><thead><tr><th>Efter-værn</th><th>Værn</th><th>Vurdering</th><th class="l">Begrundelse</th></tr></thead><tbody>
+      ${rows.map(x=>`<tr><td class="l">${esc(x.o.name)}</td><td class="l">${esc(protName(x.o))}</td><td><span class="pill ${x.st}">${x.st==="ok"?"Selektiv":x.st==="bad"?"Ikke selektiv":"Kontrollér"}</span></td><td class="l" style="white-space:normal;min-width:260px">${esc(x.txt)}</td></tr>`).join("")}</tbody></table></div></div>`)}
+  m.innerHTML=`<div class="stack"><div class="panel"><h2>Selektivitet</h2><p class="note">Kun tavlens forsyningsværn sammenlignes med de udgående kredse, der dimensioneres. Selektivitet mellem bygning 6 og 2 er stikledningens sikring i transformerstationen mod værnene i -U1. Reglerne er enkle tommelfingerregler og erstatter ikke producentens selektivitetstabeller.</p>
+   <p class="src">Kilde: <b>DS/EN 60269-1</b> (gG-sikringer selektive ved mærkestrømsforhold 1,6:1) · <b>DS/EN 60947-2</b> bilag A (selektivitet for effektafbrydere) · <b>DS/HD 60364-5-53</b> 536.4.</p></div>${blocks.join("")||`<div class="panel"><p class="note">Ingen tavler med både forsynings- og udgående kredse.</p></div>`}</div>`;
+}
+
+/* ---------- Kilder ---------- */
+let kSel={ins:"PVC",mat:"Cu",ld:3};
+function vKilder(m){
+  const t=IZ[kSel.ins][kSel.mat][kSel.ld];const ms=Object.keys(t);
+  m.innerHTML=`<div class="stack">
+  <div class="warnbox"><b>Kontrollér tabellerne.</b> Tabelværdierne er skrevet ind efter IEC/DS HD 60364-5-52, IEC 60228 og producentdata, men de er ikke sammenholdt med din udgave af standarden. Sammenlign med jeres egne tabeller, før besvarelsen afleveres. gG-sikringernes Ia er vejledende værdier – aflæs de rigtige på producentens kurve og skriv dem i feltet "Ia manuelt".</div>
+  <div class="panel"><h2>Anvendte kilder</h2><p class="help">Alle tabeller, værktøjet regner med, vises her, så de kan sammenlignes med standarden. Henvisningerne i beregningerne peger på disse kilder.</p><div class="tblwrap"><table><tbody>${Object.entries(SRC).map(([k,v])=>`<tr><td class="l" style="white-space:normal">${esc(v)}</td></tr>`).join("")}</tbody></table></div></div>
+  <div class="panel"><div class="hero"><h2 style="margin:0">Strømværdier Iz (A)</h2><div class="btns">
+    <select id="kIns"><option value="PVC">PVC 70 °C</option><option value="XLPE">PEX 90 °C</option></select>
+    <select id="kMat"><option value="Cu">Kobber</option><option value="Al">Aluminium</option></select>
+    <select id="kLd"><option value="2">2 belastede ledere</option><option value="3">3 belastede ledere</option></select></div></div>
+   <p class="src">DS/HD 60364-5-52 tabel ${IZREF[kSel.ins][kSel.ld]} (metode A1–D2) og ${IZREF[kSel.ins].E} (metode E). Omgivelser 30 °C i luft, 20 °C og 2,5 K·m/W i jord.</p>
+   <div class="tblwrap"><table><thead><tr><th>mm²</th>${ms.map(x=>`<th>${x}</th>`).join("")}<th>R20 Ω/km</th></tr></thead><tbody>
+   ${SZ.map((s,i)=>t[ms[0]][i]==null?"":`<tr><td>${fS(s)}</td>${ms.map(x=>`<td>${fS(t[x][i])}</td>`).join("")}<td>${R20[kSel.mat][i]}</td></tr>`).join("")}</tbody></table></div></div>
+  <div class="cols">
+   <div class="panel"><h2>Temperatur</h2><div class="tblwrap"><table><thead><tr><th>°C</th><th>Luft PVC</th><th>Luft PEX</th><th>Jord PVC</th><th>Jord PEX</th></tr></thead><tbody>
+   ${KTA.PVC.map(([T],i)=>`<tr><td>${T}</td><td>${KTA.PVC[i][1]}</td><td>${KTA.XLPE[i][1]}</td><td>${KTG.PVC.find(x=>x[0]===T)?.[1]??"–"}</td><td>${KTG.XLPE.find(x=>x[0]===T)?.[1]??"–"}</td></tr>`).join("")}</tbody></table></div><p class="src">Tabel B.52.14 (luft) og B.52.15 (jord).</p></div>
+   <div class="panel"><h2>Jordens termiske modstand</h2><div class="tblwrap"><table><thead><tr><th>K·m/W</th><th>I rør (D1)</th><th>Direkte (D2)</th></tr></thead><tbody>
+   ${SOIL.D1.map(([k],i)=>`<tr><td>${k}</td><td>${SOIL.D1[i][1]}</td><td>${SOIL.D2[i][1]}</td></tr>`).join("")}</tbody></table></div><p class="src">Tabel B.52.16.</p></div>
+   <div class="panel"><h2>k-værdier</h2><div class="tblwrap"><table><thead><tr><th>Isolering</th><th>Cu</th><th>Al</th></tr></thead><tbody><tr><td class="l">PVC ≤ 300 mm²</td><td>115</td><td>76</td></tr><tr><td class="l">PEX</td><td>143</td><td>94</td></tr></tbody></table></div><p class="src">DS/HD 60364-4-43 tabel 43A.</p></div>
+  </div>
+  <div class="panel"><h2>Samlet fremføring kg</h2><div class="tblwrap"><table><thead><tr><th>Fremføring</th><th>Tabel</th>${[1,2,3,4,5,6,7,8,9,12,16,20].map(n=>`<th>${n}</th>`).join("")}</tr></thead><tbody>
+   ${Object.values(GROUPS).map(g=>`<tr><td class="l" style="white-space:normal;min-width:200px">${g.t}</td><td class="l">${g.ref}</td>${[1,2,3,4,5,6,7,8,9,12,16,20].map(n=>`<td>${g.v[n]??"–"}</td>`).join("")}</tr>`).join("")}</tbody></table></div><p class="src">For enkelt lag (pkt. 2–5) sker ingen yderligere reduktion over 9 kredse.</p></div>
+  <div class="cols">
+   <div class="panel"><h2>gG-sikringer, Ia</h2><div class="tblwrap"><table><thead><tr><th>In A</th><th>Ia 5 s</th><th>Ia 0,4 s</th></tr></thead><tbody>${Object.entries(GG).map(([k,v])=>`<tr><td>${k}</td><td>${fS(v[0])}</td><td>${fS(v[1])}</td></tr>`).join("")}</tbody></table></div><p class="src">Vejledende. Erstat med værdier fra producentens tid/strøm-kurve.</p></div>
+   <div class="panel"><h2>Værn</h2><div class="tblwrap"><table><thead><tr><th>Værn</th><th class="l">Ia</th></tr></thead><tbody>
+    <tr><td class="l">MCB B / C / D</td><td class="l">5 / 10 / 20 · In</td></tr>
+    <tr><td class="l">gG</td><td class="l">tid/strøm-kurve</td></tr>
+    <tr><td class="l">MCCB</td><td class="l">1,2 · Ii</td></tr>
+    <tr><td class="l">MMS / termorelæ</td><td class="l">1,2 · Im</td></tr></tbody></table></div><p class="src">DS/EN 60898-1, 60269-1, 60947-2, 60947-4-1.</p></div>
+   <div class="panel"><h2>Udkoblingstider, TN</h2><div class="tblwrap"><table><tbody><tr><td class="l">Gruppe ≤ 32 A, fast tilsluttet</td><td>0,4 s</td></tr><tr><td class="l">Stikkontaktgruppe ≤ 63 A</td><td>0,4 s</td></tr><tr><td class="l">Gruppe > 32 A og fordelingskredse</td><td>5 s</td></tr></tbody></table></div><p class="src">DS/HD 60364-4-41 tabel 41.1, 411.3.2.2–411.3.2.3 (U0 = 230 V).</p></div>
+  </div>
+  <div class="panel"><h2>Motorer, bilag 1</h2><div class="tblwrap"><table><thead><tr><th>kW</th><th>In A</th><th>IS/IN</th><th>cos φ</th><th>η %</th></tr></thead><tbody>${MOTORS.map(x=>`<tr><td>${fS(x.kw)}</td><td>${fmt(x.In,1)}</td><td>${fmt(x.IsIn,1)}</td><td>${fmt(x.cos,2)}</td><td>${fmt(x.eta,1)}</td></tr>`).join("")}</tbody></table></div><p class="src">ABB M2BAX IE4, 3000 r/min, 400 V 50 Hz (opgavens bilag 1).</p></div>
+  </div>`;
+  $("#kIns").value=kSel.ins;$("#kMat").value=kSel.mat;$("#kLd").value=kSel.ld;
+  ["kIns","kMat","kLd"].forEach(id=>$("#"+id).onchange=()=>{kSel={ins:$("#kIns").value,mat:$("#kMat").value,ld:+$("#kLd").value};vKilder(m)});
+}
+
+/* ---------- Gem og hent ---------- */
+function vGem(m){
+  m.innerHTML=`<div class="cols"><div class="panel stack"><h2>Gem projekt</h2><p class="note">Projektet gemmes automatisk i denne browser. For at gemme en kopi eller flytte projektet til en anden computer: kopiér teksten herunder og gem den i en fil.</p>
+   <textarea id="exp" readonly>${esc(JSON.stringify(P,null,1))}</textarea><div class="btns"><button class="btn primary" id="cpyExp">Kopiér projektdata</button></div></div>
+   <div class="panel stack"><h2>Hent projekt</h2><p class="note">Indsæt tidligere gemte projektdata og tryk Hent. Det nuværende projekt bliver erstattet.</p>
+   <textarea id="imp" placeholder="Indsæt projektdata her"></textarea><div class="btns"><button class="btn primary" id="doImp">Hent</button></div><p class="note" id="impMsg"></p>
+   <div class="sec stack"><h3>Start forfra</h3><div class="btns"><button class="btn" id="ex">Indlæs eksemplet (Hansens maskinfabrik)</button><button class="btn danger" id="blank">Tomt projekt</button></div><p class="note" id="rsMsg"></p></div></div></div>`;
+  $("#cpyExp").onclick=()=>copy($("#exp").value);
+  $("#doImp").onclick=()=>{try{const x=JSON.parse($("#imp").value);if(!x.circuits||!x.net)throw 0;P=x;save();toast("Projektet er hentet");location.hash="kredse"}catch(e){$("#impMsg").textContent="Teksten kunne ikke læses som projektdata. Kopiér hele teksten fra Gem projekt."}};
+  const confirm2=(btn,fn)=>{if(btn.dataset.sure){fn()}else{document.querySelectorAll("#ex,#blank").forEach(b=>{delete b.dataset.sure;b.textContent=b.dataset.lbl});btn.dataset.sure=1;btn.textContent="Klik igen for at bekræfte";$("#rsMsg").textContent="Det nuværende projekt bliver erstattet. Gem en kopi først, hvis du vil beholde det."}};
+  document.querySelectorAll("#ex,#blank").forEach(b=>b.dataset.lbl=b.textContent);
+  const go=h=>{sel=null;if(location.hash==="#"+h)render();else location.hash=h};
+  $("#ex").onclick=e=>confirm2(e.currentTarget,()=>{P=example();autoAll(P);save();toast("Eksemplet er indlæst");go("kredse")});
+  $("#blank").onclick=e=>confirm2(e.currentTarget,()=>{const x=example();x.name="Nyt projekt";x.circuits=[];x.boards=[{id:"U1",name:"Hovedtavle -U1"}];P=x;save();toast("Tomt projekt oprettet. Start med net og transformer.");go("projekt")});
+}
+
+render();
+</script>
+
+</body>
+</html>
